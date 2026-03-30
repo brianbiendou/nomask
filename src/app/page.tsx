@@ -58,7 +58,7 @@ export default async function HomePage() {
   return (
     <div className="min-h-screen">
       {/* ======= HERO SECTION ======= */}
-      <section className="max-w-300 mx-auto px-4 pt-6 pb-8">
+      <section className="max-w-255 mx-auto px-4 pt-6 pb-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Article principal (gauche - 2 colonnes) */}
           <div className="lg:col-span-2">
@@ -85,7 +85,7 @@ export default async function HomePage() {
 
       {/* ======= TRENDING BAR ======= */}
       <section className="border-y border-gray-200 bg-white">
-        <div className="max-w-300 mx-auto px-4 py-3 flex items-center gap-4 overflow-x-auto hide-scrollbar">
+        <div className="max-w-255 mx-auto px-4 py-3 flex items-center gap-4 overflow-x-auto hide-scrollbar">
           <span className="shrink-0 text-blue-600 font-black text-sm flex items-center gap-1">
             ⚡ Tendances
           </span>
@@ -105,7 +105,7 @@ export default async function HomePage() {
 
       {/* ======= À LIRE ABSOLUMENT ======= */}
       <section className="bg-section-dark py-10">
-        <div className="max-w-300 mx-auto px-4">
+        <div className="max-w-255 mx-auto px-4">
           <SectionTitle title="À lire absolument" light />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
             {mustReadArticles.map((article) => (
@@ -116,7 +116,7 @@ export default async function HomePage() {
       </section>
 
       {/* ======= LE RÉCAP + DERNIÈRES ACTUS ======= */}
-      <section className="max-w-300 mx-auto px-4 py-10">
+      <section className="max-w-255 mx-auto px-4 py-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
           {/* Colonne gauche : le récap */}
           <div>
@@ -141,7 +141,7 @@ export default async function HomePage() {
 
       {/* ======= NOS VIDÉOS (placeholder) ======= */}
       <section className="bg-gray-50 py-10">
-        <div className="max-w-300 mx-auto px-4">
+        <div className="max-w-255 mx-auto px-4">
           <SectionTitle title="Nos vidéos 🎬" />
           <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
             {[1, 2, 3].map((i) => (
@@ -157,7 +157,7 @@ export default async function HomePage() {
       </section>
 
       {/* ======= TOUTE L'ACTUALITÉ ======= */}
-      <section className="max-w-300 mx-auto px-4 py-10">
+      <section className="max-w-255 mx-auto px-4 py-10">
         <SectionTitle title="Toute l'actualité" />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 mt-6">
           {allNewsArticles.map((article) => (
@@ -168,7 +168,7 @@ export default async function HomePage() {
 
       {/* ======= CATÉGORIES EN COLONNES (fond sombre) ======= */}
       <section className="bg-section-dark py-10">
-        <div className="max-w-300 mx-auto px-4">
+        <div className="max-w-255 mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <CategoryColumn
               title="Politique"
@@ -190,7 +190,7 @@ export default async function HomePage() {
       </section>
 
       {/* ======= NEWSLETTER ======= */}
-      <section className="max-w-300 mx-auto px-4 py-10">
+      <section className="max-w-255 mx-auto px-4 py-10">
         <div className="max-w-lg mx-auto">
           <Newsletter />
         </div>

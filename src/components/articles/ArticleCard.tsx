@@ -69,13 +69,13 @@ export default function ArticleCard({
       <article className="flex gap-4 group">
         <Link href={articleUrl} className="shrink-0">
           {article.image_url && (
-            <div className="relative w-36 h-24 sm:w-44 sm:h-28 overflow-hidden rounded">
+            <div className="relative w-44 h-28 sm:w-52 sm:h-32 overflow-hidden rounded">
               <Image
                 src={article.image_url}
                 alt={article.title}
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-300"
-                sizes="176px"
+                sizes="208px"
               />
             </div>
           )}
@@ -83,7 +83,7 @@ export default function ArticleCard({
         <div className="flex flex-col justify-center min-w-0">
           <Link
             href={articleUrl}
-            className="text-[15px] font-bold text-dark hover:text-blue-600 transition-colors line-clamp-2 leading-snug"
+            className="text-[15px] font-bold text-dark hover:text-blue-600 transition-colors line-clamp-3 leading-snug"
           >
             {article.title}
           </Link>

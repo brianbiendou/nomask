@@ -1,23 +1,23 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 
 const SOCIAL_LINKS = [
-  { name: "X", href: "#", icon: "ð•" },
+  { name: "X", href: "#", icon: "𝕏" },
   { name: "Facebook", href: "#", icon: "f" },
-  { name: "RSS", href: "/rss.xml", icon: "ðŸ“¡" },
+  { name: "RSS", href: "/rss.xml", icon: "📡" },
 ];
 
 const FOOTER_LINKS = [
-  { name: "Ã€ propos", href: "/a-propos" },
-  { name: "Mentions lÃ©gales", href: "/mentions-legales" },
-  { name: "DonnÃ©es personnelles", href: "/mentions-legales" },
+  { name: "À propos", href: "/a-propos" },
+  { name: "Mentions légales", href: "/mentions-legales" },
+  { name: "Données personnelles", href: "/mentions-legales" },
   { name: "Contact", href: "/contact" },
 ];
 
 export default function Footer() {
   return (
     <footer className="bg-dark text-gray-300">
-      {/* Logo + rÃ©seaux sociaux */}
-      <div className="max-w-300 mx-auto px-4 pt-10 pb-6">
+      {/* Logo + réseaux sociaux */}
+      <div className="max-w-255 mx-auto px-4 pt-10 pb-6">
         <div className="flex flex-col items-center gap-4">
           <Link href="/" className="inline-block">
             <span className="text-3xl font-black tracking-tight lowercase">
@@ -42,7 +42,7 @@ export default function Footer() {
 
       {/* Liens */}
       <div className="border-t border-gray-700">
-        <div className="max-w-300 mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between gap-3">
+        <div className="max-w-255 mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between gap-3">
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
             {FOOTER_LINKS.map((item, i) => (
               <span key={item.name} className="flex items-center gap-4">
@@ -53,13 +53,13 @@ export default function Footer() {
                   {item.name}
                 </Link>
                 {i < FOOTER_LINKS.length - 1 && (
-                  <span className="text-gray-600 text-xs">Â·</span>
+                  <span className="text-gray-600 text-xs">·</span>
                 )}
               </span>
             ))}
           </div>
           <p className="text-xs text-gray-500">
-            Â© {new Date().getFullYear()} NoMask, tous droits rÃ©servÃ©s
+            © {new Date().getFullYear()} NoMask, tous droits réservés
           </p>
         </div>
       </div>

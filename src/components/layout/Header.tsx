@@ -1,7 +1,7 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Globe,
   Landmark,
@@ -19,27 +19,43 @@ import {
 } from "lucide-react";
 
 const NAV_ITEMS = [
-  { name: "actus", href: "/international", Icon: Globe },
-  { name: "politique", href: "/politique", Icon: Landmark },
-  { name: "\u00e9conomie", href: "/economie", Icon: TrendingUp },
-  { name: "soci\u00e9t\u00e9", href: "/societe", Icon: Users },
-  { name: "tech", href: "/tech", Icon: Cpu },
-  { name: "culture", href: "/culture", Icon: Clapperboard },
-  { name: "science", href: "/science", Icon: Microscope },
-  { name: "sport", href: "/sport", Icon: Trophy },
-  { name: "style", href: "/style", Icon: Sparkles },
+  { name: "Actus", href: "/international", Icon: Globe },
+  { name: "Politique", href: "/politique", Icon: Landmark },
+  { name: "\u00c9conomie", href: "/economie", Icon: TrendingUp },
+  { name: "Soci\u00e9t\u00e9", href: "/societe", Icon: Users },
+  { name: "Tech", href: "/tech", Icon: Cpu },
+  { name: "Culture", href: "/culture", Icon: Clapperboard },
+  { name: "Science", href: "/science", Icon: Microscope },
+  { name: "Sport", href: "/sport", Icon: Trophy },
+  { name: "Style", href: "/style", Icon: Sparkles },
 ];
 
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isScrolled, setIsScrolled] = useState(false);
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentY = window.scrollY;
+      setIsScrolled(currentY > 50);
+      lastScrollY.current = currentY;
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
     <header className="sticky top-0 z-50 bg-white shadow-sm">
-      {/* Ligne 1 : Logo + actions */}
-      <div className="border-b border-gray-100">
-        <div className="max-w-300 mx-auto px-4 flex items-center justify-between h-14">
+      {/* Ligne 1 : Logo + actions (se masque au scroll) */}
+      <div
+        className={`border-b border-gray-100 overflow-hidden transition-all duration-300 ease-in-out ${
+          isScrolled ? "max-h-0 border-b-0" : "max-h-20"
+        }`}
+      >
+        <div className="max-w-255 mx-auto px-4 flex items-center justify-between h-14">
           {/* Logo */}
           <Link href="/" className="flex items-center shrink-0">
             <span className="text-4xl font-black tracking-tight lowercase">
@@ -50,7 +66,7 @@ export default function Header() {
 
           {/* Actions droite */}
           <div className="flex items-center gap-2">
-            {isSearchOpen ? (
+            {isSearchOpen && !isScrolled ? (
               <form action="/recherche" method="get" className="flex items-center">
                 <input
                   type="text"
@@ -69,25 +85,31 @@ export default function Header() {
                 </button>
               </form>
             ) : (
-              <button
-                onClick={() => setIsSearchOpen(true)}
-                className="p-2 text-gray-500 hover:text-brand transition-colors"
-                aria-label="Rechercher"
-              >
-                <Search className="w-5 h-5" />
-              </button>
+              !isScrolled && (
+                <button
+                  onClick={() => setIsSearchOpen(true)}
+                  className="p-2 text-gray-500 hover:text-brand transition-colors"
+                  aria-label="Rechercher"
+                >
+                  <Search className="w-5 h-5" />
+                </button>
+              )
             )}
 
-            <button className="p-2 text-gray-500 hover:text-brand transition-colors" aria-label="Compte">
-              <UserCircle className="w-5 h-5" />
-            </button>
+            {!isScrolled && (
+              <>
+                <button className="p-2 text-gray-500 hover:text-brand transition-colors" aria-label="Compte">
+                  <UserCircle className="w-5 h-5" />
+                </button>
 
-            <Link
-              href="/contact"
-              className="hidden sm:flex items-center gap-1.5 px-4 py-2 bg-brand text-white text-xs font-bold uppercase tracking-wider rounded hover:bg-brand-dark transition-colors"
-            >
-              <span className="text-sm">+</span> S&apos;abonner
-            </Link>
+                <Link
+                  href="/contact"
+                  className="hidden sm:flex items-center gap-1.5 px-4 py-2 bg-brand text-white text-xs font-bold uppercase tracking-wider rounded hover:bg-brand-dark transition-colors"
+                >
+                  <span className="text-sm">+</span> S&apos;abonner
+                </Link>
+              </>
+            )}
 
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -100,26 +122,62 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Ligne 2 : Navigation categories */}
+      {/* Ligne 2 : Navigation — devient ligne unique avec logo+actions au scroll */}
       <nav className="hidden lg:block border-b border-gray-200 bg-white">
-        <div className="max-w-300 mx-auto px-4 flex items-center justify-center gap-1 h-11 overflow-x-auto hide-scrollbar">
-          {NAV_ITEMS.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-semibold text-gray-700 hover:text-brand hover:bg-gray-50 rounded transition-colors whitespace-nowrap"
-            >
-              <item.Icon className="w-4 h-4 opacity-60" />
-              <span>{item.name}</span>
+        <div className="max-w-255 mx-auto px-4 flex items-center h-11 overflow-x-auto hide-scrollbar">
+          {/* Logo compact (visible uniquement au scroll) */}
+          {isScrolled && (
+            <Link href="/" className="flex items-center shrink-0 mr-4">
+              <span className="text-2xl font-black tracking-tight lowercase">
+                <span className="text-brand">no</span>
+                <span className="text-dark">mask</span>
+              </span>
             </Link>
-          ))}
+          )}
+
+          {/* Categories centrees */}
+          <div className="flex-1 flex items-center justify-center gap-1">
+            {NAV_ITEMS.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-normal text-gray-700 hover:text-brand hover:bg-gray-50 rounded transition-colors whitespace-nowrap"
+                style={{ fontFamily: "var(--font-source-sans), sans-serif" }}
+              >
+                <item.Icon className="w-4 h-4 opacity-60" />
+                <span>{item.name}</span>
+              </Link>
+            ))}
+          </div>
+
+          {/* Actions (visibles uniquement au scroll) */}
+          {isScrolled && (
+            <div className="flex items-center gap-2 shrink-0 ml-4">
+              <button
+                onClick={() => setIsSearchOpen(true)}
+                className="p-2 text-gray-500 hover:text-brand transition-colors"
+                aria-label="Rechercher"
+              >
+                <Search className="w-5 h-5" />
+              </button>
+              <button className="p-2 text-gray-500 hover:text-brand transition-colors" aria-label="Compte">
+                <UserCircle className="w-5 h-5" />
+              </button>
+              <Link
+                href="/contact"
+                className="flex items-center gap-1.5 px-4 py-2 bg-brand text-white text-xs font-bold uppercase tracking-wider rounded hover:bg-brand-dark transition-colors"
+              >
+                <span className="text-sm">+</span> S&apos;abonner
+              </Link>
+            </div>
+          )}
         </div>
       </nav>
 
       {/* Menu mobile */}
       {isMobileMenuOpen && (
         <nav className="lg:hidden border-t border-gray-200 bg-white">
-          <div className="max-w-300 mx-auto px-4 py-2">
+          <div className="max-w-255 mx-auto px-4 py-2">
             {NAV_ITEMS.map((item) => (
               <Link
                 key={item.href}
