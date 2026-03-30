@@ -15,6 +15,20 @@ export function formatDateShort(dateString: string): string {
   });
 }
 
+export function formatDateWithTime(dateString: string): string {
+  const date = new Date(dateString);
+  const d = date.toLocaleDateString("fr-FR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+  const t = date.toLocaleTimeString("fr-FR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  return `${d} \u2022 ${t}`;
+}
+
 export function formatTime(dateString: string): string {
   const date = new Date(dateString);
   return date.toLocaleTimeString("fr-FR", {
