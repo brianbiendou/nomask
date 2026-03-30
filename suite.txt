@@ -1,0 +1,205 @@
+AUDIT COMPLET — NoMask (nomask.fr)
+1. VUE D'ENSEMBLE DU PROJET
+Stack technique : Next.js 16 + React 19 + Tailwind CSS 4 + Supabase (PostgreSQL)
+Hébergement visé : Vercel
+Type : Site d'actualités/média en ligne (style Le Figaro)
+Domaine : nomask.fr
+Slogan : "L'actualité sans filtre"
+
+2. CE QUI EST BIEN FAIT (Points forts)
+Architecture technique
+Next.js App Router avec rendu serveur (SSR) + ISR (revalidation toutes les 5 min) — excellent pour le SEO
+9 catégories bien définies : International, Politique, Société, Économie, Tech, Culture, Science, Sport, Style
+Sous-catégories présentes en base (Europe, Moyen-Orient, IA, Football, etc.) — bonne granularité
+URLs propres : /{catégorie}/{slug} — exactement la structure recommandée dans ton document de base
+SEO technique
+Element	Statut
+sitemap.xml dynamique	OK
+robots.txt	OK
+rss.xml	OK
+Metadata (title, description, OG, Twitter)	OK sur chaque page
+JSON-LD NewsArticle	OK
+JSON-LD WebSite + SearchAction	OK
+JSON-LD BreadcrumbList	OK
+canonical URL	OK
+hreflang (fr/en)	Partiellement (OG only)
+lang="fr" sur <html>	OK
+Inter (Google Font) avec display: swap	OK
+Base de données Supabase
+Schéma bien structuré avec UUID, index, RLS
+Tables : authors, categories, subcategories, articles, tags, article_tags, comments, newsletter_subscribers
+Contrainte UNIQUE(locale, slug) sur les articles — permet le bilingue FR/EN
+Trigger updated_at automatique
+RLS activé sur toutes les tables — sécurité
+Pages obligatoires pour Google News
+Page	Existe
+Accueil	OK
+À propos	OK
+Contact	OK
+Mentions légales	OK
+Page auteur	OK
+Page catégorie	OK
+Page article	OK
+Recherche	OK
+Composants média
+Carousel d'actualités avec autoplay
+Live Ticker "Direct"
+Section "Les plus lus"
+Newsletter
+Commentaires avec réponses
+Boutons de partage (X, Facebook, LinkedIn, Copier)
+Fil d'Ariane (Breadcrumb)
+Missions/Guides documentés
+Google Search Console
+Google Publisher Center
+Google AdSense
+Checklist SEO quotidienne
+Stratégie réseaux sociaux
+Guide migrations Supabase
+3. STOCKAGE DES ARTICLES — Architecture
+Comment les articles sont stockés
+Les articles sont dans Supabase (PostgreSQL) avec cette structure :
+
+Architecture catégories
+Routage URL
+Ce qui est bien dans cette architecture :
+Les articles sont filtrés par category_id et locale dans toutes les requêtes
+Les articles featured/breaking sont séparés pour le carousel et le ticker
+Les articles liés sont récupérés par category_id (même catégorie)
+La pagination est prête (offset + limit dans getArticles)
+4. CE QUI MANQUE (Points critiques)
+A. Manques CRITIQUES pour le SEO et Google News
+1. Pas de sitemap News (/news-sitemap.xml)
+Google News nécessite un sitemap spécifique ne contenant que les articles des 48 dernières heures. Ton sitemap actuel liste tout sans filtre temporel ni namespace news:.
+
+2. Pas de tag <article:published_time>article:published_time dans le HTML
+Le <meta property="article:published_time"> est déjà dans l'OG, mais il manque article:modified_time explicitement dans les <meta>.
+
+3. Pas de page /politique-de-confidentialite dédiée
+Tu rediriges vers mentions-legales, mais Google préfère une page séparée.
+
+4. Les images viennent d'Unsplash
+Pour Google News et le droit d'auteur, utiliser des images stock sans licence claire est risqué. Il faut :
+
+Soit des images libres de droits avec attribution
+Soit tes propres visuels
+Soit un service comme Pexels/Pixabay avec les bons crédits
+5. Le contenu est du HTML brut dans content
+Tu utilises dangerouslySetInnerHTML — c'est un risque de sécurité XSS si le contenu n'est pas sanitisé. Pour la génération automatique, il faut impérativement un sanitizer.
+
+6. Pas de système de compteur de vues
+La section "Les plus lus" récupère les articles les plus récents, pas les plus lus. Il manque un champ view_count ou une table article_views.
+
+7. Pas de liens internes dans le contenu des articles
+Les articles HTML n'ont aucun lien interne vers d'autres articles NoMask. Le maillage interne est crucial pour le SEO.
+
+B. Manques IMPORTANTS
+Élement manquant	Impact
+Pagination sur les pages catégorie	Avec 500+ articles, tu ne peux pas tout charger
+Page tags (/tag/{slug})	Les tags existent en BDD mais aucune page ne les affiche
+Favicon / logo.png	Référencé dans JSON-LD mais n'existe probablement pas dans /public
+Open Graph image par défaut	Si un article n'a pas d'image, pas d'OG image
+Performance images : pas de <link rel="preload"> pour l'image hero	LCP (Core Web Vitals)
+Pas de page 404 personnalisée	not-found.tsx manquant
+Pas de bannière cookies / consentement	Obligatoire RGPD
+Pas de Google Analytics / Plausible	Aucun tracking d'audience
+Pas de gestion d'erreurs globale	error.tsx manquant
+Mentions légales incomplètes	Placeholders [Nom], [Adresse], [SIRET]
+Aucun lien vers les réseaux sociaux du site	Pas de compte Twitter/X, Facebook, etc.
+C. Manques pour la PRODUCTION D'ARTICLES AUTOMATIQUES
+Élement	Statut
+API/route pour créer un article	MANQUANT
+Dashboard admin pour publier	MANQUANT
+Système de génération IA	MANQUANT
+Système de recherche de sujets tendances	MANQUANT
+File d'attente de publication	MANQUANT
+Validation/review avant publication	MANQUANT
+5. BLUEPRINT — USINE A ARTICLES PARFAITE
+A. Structure idéale d'un article
+Chaque article généré automatiquement doit respecter ce template :
+
+Longueur cible :
+
+Article actu rapide : 300-500 mots (3 min)
+Article standard : 800-1200 mots (5-7 min)
+Article analyse/dossier : 1500-2500 mots (10+ min)
+B. Gestion des images
+Pour une usine à articles, voici le pipeline images recommandé :
+
+Sources gratuites légales :
+
+Unsplash API (licence libre, pas d'attribution obligatoire)
+Pexels API (licence libre)
+Pixabay API (licence libre)
+Wikimedia Commons (pour les images d'actualité historiques)
+Stratégie:
+
+Utiliser l'API Unsplash/Pexels pour rechercher par mots-clés de l'article
+Stocker les images dans Supabase Storage (pas de liens externes directs)
+Redimensionner en 1200x630 (format OG) + version miniature 400x250
+Toujours renseigner le image_caption avec le crédit
+Nommer le fichier : {slug}-hero.webp (format WebP pour la performance)
+Optimisation :
+
+Format WebP obligatoire
+Compression à 80% qualité
+Lazy loading sur toutes les images sauf la hero (qui a priority)
+Ajouter alt descriptif incluant le mot-clé
+C. Pipeline de génération automatique (à implémenter)
+[1] TRENDS FINDER
+    → Google Trends API / RSS concurrents / X trending
+    → Sélectionne 5-10 sujets/jour
+
+[2] ARTICLE GENERATOR
+    → Prompt IA structuré (titre SEO, contenu HTML, excerpt, tags)
+    → Validation : longueur, structure H2, mot-clé, liens internes
+    → Sanitization HTML (DOMPurify)
+
+[3] IMAGE FINDER
+    → Recherche images via Unsplash/Pexels API
+    → Upload dans Supabase Storage
+    → Génère l'URL et le caption
+
+[4] REVIEW QUEUE
+    → status = 'draft' par défaut
+    → Dashboard admin pour valider/modifier avant 'published'
+    → Ou publication automatique si score qualité > seuil
+
+[5] PUBLISHER
+    → Met status = 'published' + published_at = NOW()
+    → Notifie Google via API Indexing (ping sitemap)
+    → Post automatique sur réseaux sociaux
+
+6. VERDICT — Est-ce que NoMask est sur la voie du succès ?
+Score global : 7.5 / 10 pour la V1
+Critère	Score	Commentaire
+Architecture technique	9/10	Next.js + Supabase = choix excellent
+SEO on-page	8/10	Metadata, JSON-LD, sitemap, RSS — très solide
+SEO technique	7/10	Manque sitemap news, pagination, images optimisées
+Design/UX	8/10	Style journal professionnel, responsive, carousel
+Sécurité	6/10	XSS possible via dangerouslySetInnerHTML, RLS OK
+Google News readiness	7/10	Pages obligatoires OK, manque news-sitemap et volume
+Production d'articles	3/10	Aucune automatisation en place
+Infrastructure données	8/10	Schéma BDD complet et bien pensé
+Ce qui te sépare de la réussite
+Volume : Il te faut 50-100 articles seed réels (pas juste les 45 du seed actuel)
+News Sitemap : À implémenter avant de soumettre à Google Publisher Center
+Pipeline articles IA : C'est le nerf de la guerre — sans ça, tu ne pourras pas tenir 5-10/jour
+Admin dashboard : Même minimaliste, pour gérer les publications
+Sanitization HTML : Critique avant de passer en production
+Compteur de vues : Pour avoir un vrai "Les plus lus"
+Favicon + logo : Indispensable pour Google News et le branding
+Plan d'action prioritaire
+Priorité	Action
+P0	Ajouter /news-sitemap.xml (articles < 48h)
+P0	Sanitiser le HTML (content) contre le XSS
+P0	Créer favicon.ico + logo.png dans /public
+P1	Créer API route POST /api/articles pour la création programmatique
+P1	Implémenter le pipeline de génération IA d'articles
+P1	Ajouter pagination sur les pages catégories
+P2	Page /tag/{slug}
+P2	Compteur de vues (view_count)
+P2	Bannière cookies RGPD
+P2	Page 404 personnalisée
+P3	Dashboard admin minimal
+P3	Intégration réseaux sociaux auto-post
