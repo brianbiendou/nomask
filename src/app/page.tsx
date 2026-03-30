@@ -4,9 +4,9 @@ import {
   getBreakingNews,
   getMostRecentArticles,
   getArticlesByCategory,
+  getArticlesBySubcategory,
 } from "@/lib/queries";
 import ArticleCard from "@/components/articles/ArticleCard";
-import Newsletter from "@/components/home/Newsletter";
 import Link from "next/link";
 import type { ArticleWithRelations } from "@/types";
 import { formatDateShort, formatDateWithTime } from "@/lib/utils";
@@ -19,17 +19,25 @@ export default async function HomePage() {
     breakingNews,
     latestArticles,
     mostRecent,
-    politiqueArticles,
+    ,  // politiqueArticles (unused)
     techArticles,
-    societeArticles,
+    ,  // societeArticles (unused)
+    sportArticles,
+    economieArticles,
+    sciencesArticles,
+    buyingGuides,
   ] = await Promise.all([
     getCarouselArticles(),
     getBreakingNews(),
-    getArticles({ limit: 12 }),
-    getMostRecentArticles("fr", 8),
+    getArticles({ limit: 20 }),
+    getMostRecentArticles("fr", 20),
     getArticlesByCategory("politique", "fr", 4),
     getArticlesByCategory("tech", "fr", 4),
     getArticlesByCategory("societe", "fr", 4),
+    getArticlesByCategory("sport", "fr", 3),
+    getArticlesByCategory("economie", "fr", 3),
+    getArticlesByCategory("sciences", "fr", 3),
+    getArticlesBySubcategory("tech", "guides-achat", "fr", 4),
   ]);
 
   // Hero principal + sidebar
@@ -45,9 +53,17 @@ export default async function HomePage() {
     .filter((a) => !heroIds.has(a.id))
     .slice(0, 3);
 
-  // Toute l'actualité
+  // Toute l'actualité & NoMask+
   const allUsed = new Set([...heroIds, ...mustReadArticles.map((a) => a.id)]);
-  const allNewsArticles = mostRecent.filter((a) => !allUsed.has(a.id));
+  const remainingArticles = mostRecent.filter((a) => !allUsed.has(a.id));
+  
+  const plusArticles = remainingArticles.length >= 3
+    ? remainingArticles.slice(0, 3)
+    : [...remainingArticles, ...mostRecent.filter((a) => !allUsed.has(a.id) && !remainingArticles.find((r) => r.id === a.id))].slice(0, 3).length >= 3
+      ? [...remainingArticles, ...mostRecent.filter((a) => !allUsed.has(a.id) && !remainingArticles.find((r) => r.id === a.id))].slice(0, 3)
+      : mostRecent.slice(0, 3);
+  const plusIds = new Set(plusArticles.map((a) => a.id));
+  const allNewsArticles = remainingArticles.filter((a) => !plusIds.has(a.id));
 
   // Trending tags
   const trendingTopics =
@@ -333,45 +349,254 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ======= TOUTE L'ACTUALITÉ ======= */}
-      <section className="max-w-255 mx-auto px-4 py-10">
-        <SectionTitle title="Toute l'actualité" />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 mt-6">
-          {allNewsArticles.map((article) => (
-            <ArticleCard key={article.id} article={article} variant="news-row" />
-          ))}
+      {/* ======= NOS ARTICLES NOMASK+ ======= */}
+      <section className="w-full bg-white pt-10 pb-16 overflow-hidden">
+        <div className="max-w-255 mx-auto px-4 relative">
+          
+          {/* NOS ARTICLES NOMASK+ TITLE */}
+          <div className="flex items-center mb-10 w-full relative z-20 overflow-visible">
+            {/* The faded yellow cross behind */}
+            <div className="absolute right-[10%] -top-10 text-[#f4f7c5] pointer-events-none z-0">
+               <svg width="140" height="140" viewBox="0 0 100 100" fill="currentColor">
+                 <path d="M35 0 H65 V35 H100 V65 H65 V100 H35 V65 H0 V35 H35 Z" />
+               </svg>
+            </div>
+            {/* Outline triangle on the left */}
+            <div className="absolute -left-16 -top-2 text-brand pointer-events-none z-0">
+              <svg width="60" height="60" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" transform="rotate(15)">
+                <path d="M50 5 L90 85 H10 Z" />
+              </svg>
+            </div>
+
+            <div className="flex items-center pr-4 bg-white relative z-10">
+              <div className="flex mr-2 mt-1">
+                {/* Tilted square */}
+                <div className="w-4 h-4 bg-brand rotate-45" />
+              </div>
+              <h2 className="text-[28px] font-black tracking-tight text-gray-900">Nos articles <span className="text-gray-900">No</span><span className="text-brand">Mask+</span></h2>
+            </div>
+            
+            <div className="flex-grow h-[1px] bg-gray-200 relative z-10"></div>
+            
+            <div className="pl-4 bg-white/80 backdrop-blur-sm relative z-10">
+               <a href="#" className="flex items-center gap-1 text-[13px] font-bold text-brand hover:text-brand-dark transition-colors uppercase tracking-wider group relative">
+                 <span className="pb-0.5 border-b-[1.5px] border-brand group-hover:border-brand-dark">Voir tous les articles</span>
+                 <span className="text-xl font-light leading-none -mt-0.5">+</span>
+               </a>
+            </div>
+          </div>
+
+          {/* ARTICLES LIST */}
+          <div className="flex flex-col gap-4 w-full">
+            {plusArticles.map((article, index) => {
+              const isLeftText = index === 1;
+
+              return (
+                <div key={article.id} className="relative w-full h-[160px] md:h-[176px] group overflow-hidden bg-gray-200 flex items-stretch">
+                  {/* Full-width background image */}
+                  <img 
+                    src={article.image_url || '/placeholder.jpg'} 
+                    alt={article.title} 
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                  />
+                  
+                  {/* Overlapping grayish-blue container */}
+                  <div className={`absolute top-0 bottom-0 ${isLeftText ? 'left-0 w-[65%]' : 'right-0 w-[65%]'} bg-[#303440]/[0.94] z-10 flex flex-col justify-center px-8 md:px-12`}>
+                     {/* Title area */}
+                     <div className="flex items-start gap-3">
+                        {/* Yellow diamond icon with cross */}
+                        <div className="mt-1.5 flex-shrink-0">
+                           <svg className="w-[16px] h-[16px] text-[#dee042]" viewBox="0 0 24 24" fill="currentColor">
+                             <path d="M12 2 L22 12 L12 22 L2 12 Z" />
+                             <path d="M11 9 h2 v2 h2 v2 h-2 v2 h-2 v-2 H9 v-2 h2 z" fill="#303440" />
+                           </svg>
+                        </div>
+                        <a href={`/${article.category?.slug}/${article.slug}`} className="hover:text-brand transition-colors">
+                          <h3 className="text-white text-lg md:text-[22px] font-black leading-[1.2] tracking-tight line-clamp-3">
+                            {article.title}
+                          </h3>
+                        </a>
+                     </div>
+
+                     {/* Author + date */}
+                     <div className="flex items-center gap-3 mt-4">
+                        <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border border-gray-500">
+                          {article.author?.avatar_url ? (
+                            <img src={article.author.avatar_url} alt={article.author?.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full bg-gray-500" />
+                          )}
+                        </div>
+                        <div className="flex items-center flex-wrap gap-x-2 text-[13px]">
+                          <span className="text-[#ff6a39] font-bold">
+                            {article.author?.name || 'Rédaction'}
+                          </span>
+                          <span className="text-gray-300 font-medium">
+                            Publié le {new Date(article.published_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '.')}
+                          </span>
+                        </div>
+                     </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
         </div>
       </section>
 
-      {/* ======= CATÉGORIES EN COLONNES (fond sombre) ======= */}
-      <section className="bg-section-dark py-10">
+      {/* ======= THÉMATIQUES (Sport, Économie, Sciences) ======= */}
+      <section className="bg-[#f7f8fa] py-10 border-t border-gray-200">
         <div className="max-w-255 mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <CategoryColumn
-              title="Politique"
-              slug="politique"
-              articles={politiqueArticles}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+            <ThemeColumn
+              title="sport"
+              icon={<svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="m4.93 4.93 4.24 4.24" /><path d="m14.83 9.17 4.24-4.24" /><path d="m14.83 14.83 4.24 4.24" /><path d="m9.17 14.83-4.24 4.24" /><circle cx="12" cy="12" r="4" /></svg>}
+              slug="sport"
+              articles={sportArticles}
             />
-            <CategoryColumn
-              title="Tech & IA"
+            <ThemeColumn
+              title="économie"
+              icon={<svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>}
+              slug="economie"
+              articles={economieArticles}
+            />
+            <ThemeColumn
+              title="sciences"
+              icon={<svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a4 4 0 0 0-4 4c0 4 4 6 4 6s4-2 4-6a4 4 0 0 0-4-4z" /><path d="M12 12v10" /><path d="M8 18c-2 0-4-1-4-3 0-1.5 1.5-3 4-3" /><path d="M16 18c2 0 4-1 4-3 0-1.5-1.5-3-4-3" /></svg>}
               slug="tech"
               articles={techArticles}
-            />
-            <CategoryColumn
-              title="Société"
-              slug="societe"
-              articles={societeArticles}
             />
           </div>
         </div>
       </section>
 
-      {/* ======= NEWSLETTER ======= */}
+      {/* ======= TOUTE L'ACTUALITÉ ======= */}
       <section className="max-w-255 mx-auto px-4 py-10">
-        <div className="max-w-lg mx-auto">
-          <Newsletter />
+        <h2 className="text-[30px] font-black tracking-tight text-gray-900 mb-8">Toute l'actualité</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-0">
+          {/* LEFT COLUMN */}
+          <div className="flex flex-col">
+            {allNewsArticles.slice(0, 5).map((article, idx) => (
+              <div key={article.id}>
+                {/* L-shape "Jackpot !" badge before the 2nd article */}
+                {idx === 1 && (
+                  <div className="relative mt-2 mb-3">
+                    <div className="inline-flex items-center gap-1.5 pl-3 pb-2 border-l-[3px] border-b-[3px] border-[#e85d99] rounded-bl-sm">
+                      <span className="text-[#e85d99] text-[22px] font-black uppercase tracking-tight">Jackpot !</span>
+                    </div>
+                  </div>
+                )}
+                <Link href={`/${article.category?.slug}/${article.slug}`} className="flex gap-4 group py-3 border-b border-gray-100 last:border-0">
+                  <div className="w-[120px] h-[90px] flex-shrink-0 overflow-hidden bg-gray-100">
+                    <img
+                      src={article.image_url || '/placeholder.jpg'}
+                      alt={article.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] text-gray-400 font-medium mb-1">
+                      {article.category?.name}
+                    </p>
+                    <h3 className="text-[15px] font-bold text-gray-900 leading-snug line-clamp-3 group-hover:text-brand transition-colors">
+                      {article.title}
+                    </h3>
+                    {article.published_at && (
+                      <p className="text-[11px] text-gray-400 mt-1.5">
+                        {formatDateWithTime(article.published_at)}
+                      </p>
+                    )}
+                  </div>
+                </Link>
+              </div>
+            ))}
+          </div>
+
+          {/* RIGHT COLUMN */}
+          <div className="flex flex-col">
+            {allNewsArticles.slice(5, 10).map((article, idx) => (
+              <div key={article.id}>
+                {/* L-shape "Pepites" badge before the 2nd article in right column (4th overall) */}
+                {idx === 2 && (
+                  <div className="relative mt-2 mb-3 flex justify-end">
+                    <div className="inline-flex items-center gap-1.5 pr-3 pb-2 border-r-[3px] border-b-[3px] border-[#e85d99] rounded-br-sm">
+                      <span className="text-[#e85d99] text-[22px] font-black uppercase tracking-tight">Pépites</span>
+                    </div>
+                  </div>
+                )}
+                <Link href={`/${article.category?.slug}/${article.slug}`} className="flex gap-4 group py-3 border-b border-gray-100 last:border-0">
+                  <div className="w-[120px] h-[90px] flex-shrink-0 overflow-hidden bg-gray-100">
+                    <img
+                      src={article.image_url || '/placeholder.jpg'}
+                      alt={article.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] text-gray-400 font-medium mb-1">
+                      {article.category?.name}
+                    </p>
+                    <h3 className="text-[15px] font-bold text-gray-900 leading-snug line-clamp-3 group-hover:text-brand transition-colors">
+                      {article.title}
+                    </h3>
+                    {article.published_at && (
+                      <p className="text-[11px] text-gray-400 mt-1.5">
+                        {formatDateWithTime(article.published_at)}
+                      </p>
+                    )}
+                  </div>
+                </Link>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
+
+      {/* ======= NOS SÉLECTIONS TESTÉES (fond sombre) ======= */}
+      <section className="bg-section-dark py-10">
+        <div className="max-w-255 mx-auto px-4">
+          <div className="flex items-start justify-between mb-8">
+            <h2 className="text-[26px] font-black text-white tracking-tight">
+              <span className="text-[#8b8cf8]">🏷️</span> Nos sélections testées
+            </h2>
+            <Link
+              href="/tech"
+              className="text-sm text-gray-400 hover:text-white transition-colors border-b border-gray-600 hover:border-white pb-0.5 mt-1.5"
+            >
+              Voir tous les guides <span className="inline-block ml-0.5">+</span>
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
+            {buyingGuides.slice(0, 4).map((article) => (
+              <Link
+                key={article.id}
+                href={`/${article.category?.slug}/${article.slug}`}
+                className="flex gap-5 group"
+              >
+                <div className="w-[160px] h-[110px] flex-shrink-0 overflow-hidden bg-gray-700 rounded-sm">
+                  <img
+                    src={article.image_url || '/placeholder.jpg'}
+                    alt={article.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-[15px] font-bold text-[#c5c6f7] leading-snug line-clamp-3 group-hover:text-white transition-colors">
+                    {article.title}
+                  </h3>
+                  {article.published_at && (
+                    <p className="text-[12px] text-gray-500 mt-2">
+                      {formatDateWithTime(article.published_at)}
+                    </p>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
     </div>
   );
 }
@@ -393,42 +618,40 @@ function SectionTitle({ title, light = false }: { title: string; light?: boolean
   );
 }
 
-function CategoryColumn({
+function ThemeColumn({
   title,
+  icon,
   slug,
   articles,
 }: {
   title: string;
+  icon: React.ReactNode;
   slug: string;
   articles: ArticleWithRelations[];
 }) {
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-base font-black text-white uppercase tracking-wide">
-          {title}
-        </h3>
-        <Link
-          href={`/${slug}`}
-          className="text-[11px] font-bold text-brand hover:text-brand-dark transition-colors uppercase tracking-wider"
-        >
-          Voir tout →
-        </Link>
+      <div className="flex items-center gap-2 mb-5">
+        <span className="text-brand">{icon}</span>
+        <h3 className="text-[22px] font-black text-brand lowercase tracking-tight">{title}</h3>
       </div>
-      <div className="space-y-3">
+      <div className="space-y-4">
         {articles.map((article) => (
           <Link
             key={article.id}
             href={`/${article.category?.slug}/${article.slug}`}
             className="block group"
           >
-            <h4 className="text-sm text-gray-300 group-hover:text-brand transition-colors line-clamp-2 leading-relaxed">
-              • {article.title}
-            </h4>
+            <div className="flex items-start gap-2">
+              <span className="mt-[7px] w-[6px] h-[6px] rounded-full bg-brand flex-shrink-0" />
+              <h4 className="text-[14px] text-gray-800 font-semibold group-hover:text-brand transition-colors line-clamp-2 leading-snug">
+                {article.title}
+              </h4>
+            </div>
             {article.published_at && (
-              <span className="text-[10px] text-gray-500">
-                {formatDateShort(article.published_at)}
-              </span>
+              <p className="text-[11px] text-gray-400 mt-1 ml-[14px]">
+                {formatDateWithTime(article.published_at)}
+              </p>
             )}
           </Link>
         ))}

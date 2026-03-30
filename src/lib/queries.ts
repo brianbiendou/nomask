@@ -174,6 +174,33 @@ export async function getRelatedArticles(
   return data as ArticleWithRelations[];
 }
 
+export async function getArticlesBySubcategory(
+  categorySlug: string,
+  subcategorySlug: string,
+  locale: string = "fr",
+  limit: number = 4
+) {
+  const { data: subcategory } = await supabase
+    .from("subcategories")
+    .select("id, category:categories!inner(id, slug)")
+    .eq("slug", subcategorySlug)
+    .single();
+
+  if (!subcategory) return [];
+
+  const { data, error } = await supabase
+    .from("articles")
+    .select(ARTICLE_SELECT)
+    .eq("status", "published")
+    .eq("locale", locale)
+    .eq("subcategory_id", subcategory.id)
+    .order("published_at", { ascending: false })
+    .limit(limit);
+
+  if (error) return [];
+  return data as ArticleWithRelations[];
+}
+
 export async function getCategories() {
   const { data, error } = await supabase
     .from("categories")

@@ -35,13 +35,20 @@ export default function Header() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isScrolled, setIsScrolled] = useState(false);
-  const lastScrollY = useRef(0);
+  const isScrolledRef = useRef(false);
 
   useEffect(() => {
     const handleScroll = () => {
       const currentY = window.scrollY;
-      setIsScrolled(currentY > 50);
-      lastScrollY.current = currentY;
+      // Hysteresis: collapse at 50px, expand only when back near top (< 10px)
+      // This prevents the flicker loop caused by header height change
+      if (!isScrolledRef.current && currentY > 50) {
+        isScrolledRef.current = true;
+        setIsScrolled(true);
+      } else if (isScrolledRef.current && currentY < 10) {
+        isScrolledRef.current = false;
+        setIsScrolled(false);
+      }
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
@@ -103,7 +110,7 @@ export default function Header() {
                 </button>
 
                 <Link
-                  href="/contact"
+                  href="/abonner"
                   className="hidden sm:flex items-center gap-1.5 px-4 py-2 bg-brand text-white text-xs font-bold uppercase tracking-wider rounded hover:bg-brand-dark transition-colors"
                 >
                   <span className="text-sm">+</span> S&apos;abonner
@@ -141,7 +148,7 @@ export default function Header() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-normal text-gray-700 hover:text-brand hover:bg-gray-50 rounded transition-colors whitespace-nowrap"
+                className="flex items-center gap-1 px-2.5 py-1.5 text-sm font-normal text-gray-700 hover:text-brand hover:bg-gray-50 rounded transition-colors whitespace-nowrap"
                 style={{ fontFamily: "var(--font-source-sans), sans-serif" }}
               >
                 <item.Icon className="w-4 h-4 opacity-60" />
@@ -152,22 +159,22 @@ export default function Header() {
 
           {/* Actions (visibles uniquement au scroll) */}
           {isScrolled && (
-            <div className="flex items-center gap-2 shrink-0 ml-4">
+            <div className="flex items-center gap-2 shrink-0 ml-3">
               <button
                 onClick={() => setIsSearchOpen(true)}
-                className="p-2 text-gray-500 hover:text-brand transition-colors"
+                className="p-1.5 text-gray-500 hover:text-brand transition-colors"
                 aria-label="Rechercher"
               >
-                <Search className="w-5 h-5" />
+                <Search className="w-4 h-4" />
               </button>
-              <button className="p-2 text-gray-500 hover:text-brand transition-colors" aria-label="Compte">
-                <UserCircle className="w-5 h-5" />
+              <button className="p-1.5 text-gray-500 hover:text-brand transition-colors" aria-label="Compte">
+                <UserCircle className="w-4 h-4" />
               </button>
               <Link
-                href="/contact"
-                className="flex items-center gap-1.5 px-4 py-2 bg-brand text-white text-xs font-bold uppercase tracking-wider rounded hover:bg-brand-dark transition-colors"
+                href="/abonner"
+                className="flex items-center gap-1 px-3 py-1.5 bg-brand text-white text-[11px] font-bold uppercase tracking-wider rounded hover:bg-brand-dark transition-colors whitespace-nowrap"
               >
-                <span className="text-sm">+</span> S&apos;abonner
+                <span className="text-xs">+</span> S&apos;abonner
               </Link>
             </div>
           )}
