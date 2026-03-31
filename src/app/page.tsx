@@ -432,7 +432,7 @@ export default async function HomePage() {
                             {article.author?.name || 'Rédaction'}
                           </span>
                           <span className="text-gray-300 font-medium">
-                            Publié le {new Date(article.published_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '.')}
+                            Publié le {article.published_at ? new Date(article.published_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '.') : '—'}
                           </span>
                         </div>
                      </div>
