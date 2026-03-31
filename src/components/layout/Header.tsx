@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import {
   Globe,
   Landmark,
@@ -34,14 +35,19 @@ export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isScrolled, setIsScrolled] = useState(false);
-  const isScrolledRef = useRef(false);
+  const pathname = usePathname();
+  const isAdmin = pathname.startsWith("/brian/biendou/admin");
+  const [isScrolled, setIsScrolled] = useState(isAdmin);
+  const isScrolledRef = useRef(isAdmin);
 
   useEffect(() => {
+    if (isAdmin) {
+      setIsScrolled(true);
+      isScrolledRef.current = true;
+      return;
+    }
     const handleScroll = () => {
       const currentY = window.scrollY;
-      // Hysteresis: collapse at 50px, expand only when back near top (< 10px)
-      // This prevents the flicker loop caused by header height change
       if (!isScrolledRef.current && currentY > 50) {
         isScrolledRef.current = true;
         setIsScrolled(true);
@@ -52,20 +58,20 @@ export default function Header() {
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [isAdmin]);
 
   return (
-    <header className="sticky top-0 z-50 bg-white shadow-sm">
+    <header className="sticky top-0 z-50 bg-white shadow-sm overflow-visible">
       {/* Ligne 1 : Logo + actions (se masque au scroll) */}
       <div
-        className={`border-b border-gray-100 overflow-hidden transition-all duration-300 ease-in-out ${
-          isScrolled ? "max-h-0 border-b-0" : "max-h-20"
+        className={`transition-all duration-300 ease-in-out ${
+          isScrolled ? "max-h-0 overflow-hidden opacity-0" : "max-h-24"
         }`}
       >
-        <div className="max-w-255 mx-auto px-4 flex items-center justify-between h-14">
+        <div className="max-w-255 mx-auto px-4 flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center shrink-0">
-            <span className="text-4xl font-black tracking-tight lowercase">
+            <span className="text-5xl font-black tracking-tight lowercase">
               <span className="text-brand">no</span>
               <span className="text-dark">mask</span>
             </span>
@@ -130,8 +136,8 @@ export default function Header() {
       </div>
 
       {/* Ligne 2 : Navigation — devient ligne unique avec logo+actions au scroll */}
-      <nav className="hidden lg:block border-b border-gray-200 bg-white">
-        <div className="max-w-255 mx-auto px-4 flex items-center h-11 overflow-x-auto hide-scrollbar">
+      <nav className="hidden lg:block border-b border-gray-200 bg-white overflow-visible">
+        <div className="max-w-255 mx-auto px-4 flex items-center h-11 overflow-visible">
           {/* Logo compact (visible uniquement au scroll) */}
           {isScrolled && (
             <Link href="/" className="flex items-center shrink-0 mr-4">
@@ -142,13 +148,13 @@ export default function Header() {
             </Link>
           )}
 
-          {/* Categories centrees */}
-          <div className="flex-1 flex items-center justify-center gap-1">
+          {/* Categories alignées à gauche */}
+          <div className={`flex-1 flex items-center ${isScrolled ? "justify-center gap-0.5" : "justify-start gap-1"}`}>
             {NAV_ITEMS.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className="flex items-center gap-1 px-2.5 py-1.5 text-sm font-normal text-gray-700 hover:text-brand hover:bg-gray-50 rounded transition-colors whitespace-nowrap"
+                className={`flex items-center gap-1 py-1.5 text-sm font-normal text-gray-700 hover:text-brand hover:bg-gray-50 rounded transition-colors whitespace-nowrap ${isScrolled ? "px-1.5" : "px-2.5"}`}
                 style={{ fontFamily: "var(--font-source-sans), sans-serif" }}
               >
                 <item.Icon className="w-4 h-4 opacity-60" />
@@ -159,7 +165,7 @@ export default function Header() {
 
           {/* Actions (visibles uniquement au scroll) */}
           {isScrolled && (
-            <div className="flex items-center gap-2 shrink-0 ml-3">
+            <div className="flex items-center gap-1.5 shrink-0 ml-2">
               <button
                 onClick={() => setIsSearchOpen(true)}
                 className="p-1.5 text-gray-500 hover:text-brand transition-colors"
@@ -172,7 +178,7 @@ export default function Header() {
               </button>
               <Link
                 href="/abonner"
-                className="flex items-center gap-1 px-3 py-1.5 bg-brand text-white text-[11px] font-bold uppercase tracking-wider rounded hover:bg-brand-dark transition-colors whitespace-nowrap"
+                className="flex items-center gap-1 px-2.5 py-1.5 bg-brand text-white text-[11px] font-bold uppercase tracking-wider rounded hover:bg-brand-dark transition-colors whitespace-nowrap"
               >
                 <span className="text-xs">+</span> S&apos;abonner
               </Link>

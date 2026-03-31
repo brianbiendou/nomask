@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Globe,
   Plus,
@@ -11,6 +11,7 @@ import {
   ExternalLink,
   AlertCircle,
   CheckCircle2,
+  Loader2,
 } from "lucide-react";
 
 interface Source {
@@ -23,43 +24,35 @@ interface Source {
   articlesFound?: number;
 }
 
-const DEFAULT_SOURCES: Source[] = [
-  {
-    id: "numerama",
-    name: "Numerama",
-    url: "https://www.numerama.com",
-    enabled: true,
-    interval: 2,
-    lastRun: undefined,
-    articlesFound: 0,
-  },
-  {
-    id: "lemonde",
-    name: "Le Monde Pixels",
-    url: "https://www.lemonde.fr/pixels/",
-    enabled: true,
-    interval: 2,
-    lastRun: undefined,
-    articlesFound: 0,
-  },
-  {
-    id: "figaro",
-    name: "Le Figaro Tech",
-    url: "https://www.lefigaro.fr/secteur/high-tech",
-    enabled: false,
-    interval: 4,
-    lastRun: undefined,
-    articlesFound: 0,
-  },
-];
-
 export default function SourcesPage() {
-  const [sources, setSources] = useState<Source[]>(DEFAULT_SOURCES);
+  const [sources, setSources] = useState<Source[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState("");
   const [newUrl, setNewUrl] = useState("");
   const [newInterval, setNewInterval] = useState(2);
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchSources = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await fetch("/api/admin/sources");
+      if (!res.ok) throw new Error(`Erreur ${res.status}`);
+      const data = await res.json();
+      setSources(data.sources ?? []);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Impossible de charger les sources");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSources();
+  }, [fetchSources]);
 
   const toggleSource = (id: string) => {
     setSources((prev) =>
@@ -91,10 +84,23 @@ export default function SourcesPage() {
     setShowAdd(false);
   };
 
-  const handleSave = () => {
-    // In-memory sauvegarde — future: persister dans Supabase auto_scrape_config
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      setError(null);
+      const res = await fetch("/api/admin/sources", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sources }),
+      });
+      if (!res.ok) throw new Error(`Erreur ${res.status}`);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Impossible de sauvegarder");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -114,14 +120,32 @@ export default function SourcesPage() {
           )}
           <button
             onClick={handleSave}
+            disabled={saving}
             className="px-4 py-2 bg-[#E84D0E] text-white rounded-xl text-sm font-medium
-              hover:bg-[#C7400A] transition-colors shadow-sm"
+              hover:bg-[#C7400A] disabled:opacity-50 transition-colors shadow-sm flex items-center gap-2"
           >
+            {saving && <Loader2 size={14} className="animate-spin" />}
             Sauvegarder
           </button>
         </div>
       </div>
 
+      {/* Erreur */}
+      {error && (
+        <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-100 flex items-center gap-2">
+          <AlertCircle size={14} className="text-red-500 shrink-0" />
+          <p className="text-xs text-red-600">{error}</p>
+        </div>
+      )}
+
+      {/* Loading */}
+      {loading ? (
+        <div className="flex items-center justify-center py-16">
+          <Loader2 size={24} className="animate-spin text-[#E84D0E]" />
+          <span className="ml-2 text-sm text-gray-500">Chargement des sources…</span>
+        </div>
+      ) : (
+      <>
       {/* Sources list */}
       <div className="space-y-3">
         {sources.map((source) => (
@@ -308,15 +332,8 @@ export default function SourcesPage() {
         </button>
       )}
 
-      {/* Info banner */}
-      <div className="mt-6 p-4 rounded-2xl bg-amber-50/50 border border-amber-100 flex items-start gap-3">
-        <AlertCircle size={16} className="text-amber-500 mt-0.5 shrink-0" />
-        <p className="text-xs text-amber-700">
-          Les sources sont actuellement stockées en mémoire. Pour la persistance,
-          exécutez le fichier <code className="bg-amber-100 px-1 rounded">database/012_create_pipeline_jobs.sql</code> dans
-          l&apos;éditeur SQL de Supabase (Dashboard &gt; SQL Editor).
-        </p>
-      </div>
+      </>
+      )}
     </div>
   );
 }

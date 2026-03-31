@@ -561,13 +561,31 @@ async def discover_trending(
 
     print(f"\n[TRENDING] {profile['name']} — recherche articles populaires")
 
-    async with aiohttp.ClientSession(headers=SCRAPE_HEADERS) as session:
+    # Headers enrichis avec cookies de consentement pour passer les murs de cookies
+    consent_headers = {
+        **SCRAPE_HEADERS,
+        "Cookie": "euconsent-v2=true; didomi_token=1; consentUUID=1; _sp_v1_consent=1:1:1; OptanonAlertBoxClosed=2024-01-01T00:00:00.000Z",
+    }
+
+    async with aiohttp.ClientSession(headers=consent_headers) as session:
         articles = await _discover_trending_from_page(
             site_url,
             profile["article_pattern"],
             session,
             profile.get("trending_selectors"),
         )
+
+        # Fallback RSS si le scraping trending n'a rien trouvé
+        if not articles and profile.get("feed_urls"):
+            print(f"  [TRENDING] Scraping échoué, fallback RSS pour {profile['name']}")
+            for feed_url in profile["feed_urls"]:
+                rss_articles = await _discover_from_rss(feed_url, session)
+                for i, art in enumerate(rss_articles):
+                    art.is_trending = True
+                    art.trending_rank = i + 1
+                articles.extend(rss_articles)
+                if articles:
+                    break  # Un seul feed suffit
 
         # Limiter
         articles = articles[:max_articles]

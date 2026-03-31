@@ -362,6 +362,7 @@ async def trending(req: TrendingRequest):
                     "commentCount": a.comment_count,
                     "section": a.section,
                     "imageUrl": a.image_url,
+                    "publishedAt": a.published_at.isoformat() if a.published_at else None,
                 }
                 for a in articles
             ]
@@ -387,3 +388,49 @@ async def trending_sources():
             "url": f"https://www.{domain}",
         })
     return {"sources": sources}
+
+
+# ────────────────────────────────────────
+# Gestion des sources (persistance JSON)
+# ────────────────────────────────────────
+import json
+from pathlib import Path
+
+_SOURCES_FILE = Path(__file__).parent / "sources.json"
+
+
+def _load_sources() -> list[dict]:
+    """Charge les sources depuis le fichier JSON."""
+    if _SOURCES_FILE.exists():
+        try:
+            return json.loads(_SOURCES_FILE.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            pass
+    # Sources par défaut
+    return [
+        {"id": "numerama", "name": "Numerama", "url": "https://www.numerama.com", "enabled": True, "interval": 2},
+        {"id": "lemonde", "name": "Le Monde Pixels", "url": "https://www.lemonde.fr/pixels/", "enabled": True, "interval": 2},
+        {"id": "figaro", "name": "Le Figaro Tech", "url": "https://www.lefigaro.fr/secteur/high-tech", "enabled": False, "interval": 4},
+    ]
+
+
+def _save_sources(sources: list[dict]) -> None:
+    """Persiste les sources dans le fichier JSON."""
+    _SOURCES_FILE.write_text(json.dumps(sources, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+@app.get("/api/sources")
+async def get_sources():
+    """Récupérer la liste des sources."""
+    return {"sources": _load_sources()}
+
+
+class SourcesPayload(BaseModel):
+    sources: list[dict]
+
+
+@app.post("/api/sources")
+async def save_sources(payload: SourcesPayload):
+    """Sauvegarder la liste des sources."""
+    _save_sources(payload.sources)
+    return {"success": True, "sources": payload.sources}

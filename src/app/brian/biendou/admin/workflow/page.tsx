@@ -95,6 +95,7 @@ interface TrendingArticle {
   commentCount: number | null;
   section: string | null;
   imageUrl: string | null;
+  publishedAt: string | null;
 }
 
 interface TrendingResults {
@@ -151,6 +152,9 @@ function WorkflowContent() {
       if (res.ok) {
         const data = await res.json();
         setActiveJob(data.job);
+      } else if (res.status === 404) {
+        // Job disparu (ex: backend redémarré) — on arrête le polling
+        setActiveJob((prev) => prev ? { ...prev, status: "completed" } : prev);
       }
     } catch { /* silent */ }
   }, [activeJobId]);
@@ -162,9 +166,12 @@ function WorkflowContent() {
   useEffect(() => {
     fetchActiveJob();
     if (!activeJobId) return;
-    const interval = setInterval(fetchActiveJob, 1500);
+    // Stop polling if the job is finished
+    const status = activeJob?.status;
+    if (status === "completed" || status === "failed") return;
+    const interval = setInterval(fetchActiveJob, 2000);
     return () => clearInterval(interval);
-  }, [activeJobId, fetchActiveJob]);
+  }, [activeJobId, activeJob?.status, fetchActiveJob]);
 
   /* Fetch trending articles */
   const fetchTrending = async () => {
@@ -328,13 +335,13 @@ function WorkflowContent() {
   /* Render                                                   */
   /* -------------------------------------------------------- */
   return (
-    <div className="p-3 sm:p-4 lg:p-6 max-w-7xl mx-auto overflow-x-hidden">
+    <div className="p-3 sm:p-4 lg:p-5 max-w-full mx-auto overflow-x-hidden">
       <h1 className="text-2xl font-bold text-gray-900 mb-1">Workflow</h1>
-      <p className="text-sm text-gray-500 mb-6">
+      <p className="text-sm text-gray-500 mb-5">
         Lancez et suivez les pipelines de découverte, scraping, réécriture IA et publication.
       </p>
 
-      <div className="grid lg:grid-cols-[340px_1fr] gap-4">
+      <div className="grid lg:grid-cols-[300px_1fr] gap-3">
         {/* ===== LEFT: Launch form ===== */}
         <div className="space-y-4">
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
@@ -656,7 +663,7 @@ function WorkflowContent() {
                                 #{article.rank}
                               </span>
                             )}
-                            <p className="text-sm font-medium text-gray-900 truncate">
+                            <p className="text-sm font-medium text-gray-900 break-words">
                               {article.title}
                             </p>
                           </div>
@@ -681,6 +688,11 @@ function WorkflowContent() {
                               <ExternalLink size={9} />
                               voir
                             </a>
+                            {article.publishedAt && (
+                              <span className="text-[10px] text-gray-400">
+                                {new Date(article.publishedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </label>
@@ -720,28 +732,11 @@ function WorkflowContent() {
                   </span>
                 </div>
 
-                {/* Step nodes connected by lines */}
-                <div className="flex items-center justify-between relative overflow-x-auto scrollbar-hide">
-                  {/* Connecting line */}
-                  <div className="absolute top-[22px] left-[22px] right-[22px] h-0.5 bg-gray-200" />
-                  {/* Progress line */}
-                  {(() => {
-                    const completedCount = PIPELINE_STEPS.filter(
-                      (s) => getStepStatus(activeJob, s.key) === "completed"
-                    ).length;
-                    const pct = (completedCount / PIPELINE_STEPS.length) * 100;
-                    return (
-                      <div
-                        className="absolute top-[22px] left-[22px] h-0.5 bg-[#E84D0E] transition-all duration-700"
-                        style={{ width: `calc(${pct}% - 44px * ${pct / 100})` }}
-                      />
-                    );
-                  })()}
-
-                  {PIPELINE_STEPS.map((step) => {
+                {/* Step nodes on single row */}
+                <div className="flex items-start">
+                  {PIPELINE_STEPS.map((step, i) => {
                     const status = getStepStatus(activeJob, step.key);
                     const Icon = step.icon;
-
                     const ring =
                       status === "completed"
                         ? "ring-2 ring-green-500 bg-green-50"
@@ -750,44 +745,43 @@ function WorkflowContent() {
                         : status === "failed"
                         ? "ring-2 ring-red-500 bg-red-50"
                         : "ring-1 ring-gray-200 bg-gray-50";
-
                     const iconColor =
-                      status === "completed"
-                        ? "text-green-600"
-                        : status === "running"
-                        ? "text-[#E84D0E]"
-                        : status === "failed"
-                        ? "text-red-500"
+                      status === "completed" ? "text-green-600"
+                        : status === "running" ? "text-[#E84D0E]"
+                        : status === "failed" ? "text-red-500"
+                        : "text-gray-400";
+                    const labelColor =
+                      status === "completed" ? "text-green-600"
+                        : status === "running" ? "text-[#E84D0E]"
+                        : status === "failed" ? "text-red-500"
                         : "text-gray-400";
 
+                    // Line between this node and the next
+                    const nextDone = i < PIPELINE_STEPS.length - 1 &&
+                      status === "completed" &&
+                      ["completed", "running"].includes(getStepStatus(activeJob, PIPELINE_STEPS[i + 1].key));
+
                     return (
-                      <div key={step.key} className="flex flex-col items-center z-10">
-                        <div
-                          className={`w-11 h-11 rounded-full flex items-center justify-center
-                            ${ring} transition-all duration-300 relative`}
-                        >
-                          {status === "completed" ? (
-                            <CheckCircle2 size={20} className="text-green-600" />
-                          ) : status === "running" ? (
-                            <Loader2
-                              size={20}
-                              className="text-[#E84D0E] animate-spin"
-                            />
-                          ) : status === "failed" ? (
-                            <AlertCircle size={20} className="text-red-500" />
-                          ) : (
-                            <Icon size={18} className={iconColor} />
-                          )}
+                      <div key={step.key} className="flex items-center" style={{ flex: i < PIPELINE_STEPS.length - 1 ? '1 1 0%' : '0 0 auto' }}>
+                        <div className="flex flex-col items-center shrink-0">
+                          <div className={`w-11 h-11 rounded-full flex items-center justify-center ${ring} transition-all duration-300`}>
+                            {status === "completed" ? (
+                              <CheckCircle2 size={20} className="text-green-600" />
+                            ) : status === "running" ? (
+                              <Loader2 size={20} className="text-[#E84D0E] animate-spin" />
+                            ) : status === "failed" ? (
+                              <AlertCircle size={20} className="text-red-500" />
+                            ) : (
+                              <Icon size={18} className={iconColor} />
+                            )}
+                          </div>
+                          <span className={`text-[10px] mt-1.5 font-medium whitespace-nowrap ${labelColor}`}>
+                            {step.label}
+                          </span>
                         </div>
-                        <span
-                          className={`text-[11px] mt-2 font-medium
-                            ${status === "completed" ? "text-green-600"
-                            : status === "running" ? "text-[#E84D0E]"
-                            : status === "failed" ? "text-red-500"
-                            : "text-gray-400"}`}
-                        >
-                          {step.label}
-                        </span>
+                        {i < PIPELINE_STEPS.length - 1 && (
+                          <div className={`h-0.5 flex-1 mx-1 mt-[-16px] ${nextDone ? 'bg-green-400' : 'bg-gray-200'} transition-colors duration-500`} />
+                        )}
                       </div>
                     );
                   })}
@@ -860,12 +854,12 @@ function WorkflowContent() {
                               />
                             )}
 
-                            <div className="flex-1 min-w-0 overflow-hidden">
-                              <p className="text-sm font-medium text-gray-900 truncate">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 break-words">
                                 {article.newTitle || article.title || article.url}
                               </p>
                               {article.newTitle && article.title && (
-                                <p className="text-[10px] text-gray-400 truncate mt-0.5">
+                                <p className="text-[10px] text-gray-400 break-words mt-0.5">
                                   Original : {article.title}
                                 </p>
                               )}

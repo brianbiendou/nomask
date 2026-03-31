@@ -66,9 +66,14 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     fetchJobs();
-    const interval = setInterval(fetchJobs, 3000);
-    return () => clearInterval(interval);
   }, [fetchJobs]);
+
+  // Poll uniquement quand il y a des jobs en cours
+  useEffect(() => {
+    if (stats.running === 0) return;
+    const interval = setInterval(fetchJobs, 5000);
+    return () => clearInterval(interval);
+  }, [fetchJobs, stats.running]);
 
   const statusConfig: Record<string, { label: string; color: string; icon: React.ComponentType<{ size?: number; className?: string }> }> = {
     pending: { label: "En attente", color: "text-gray-500 bg-gray-50", icon: Clock },
