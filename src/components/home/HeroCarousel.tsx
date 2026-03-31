@@ -43,7 +43,7 @@ export default function HeroCarousel({ articles }: HeroCarouselProps) {
     <div className="relative group/carousel">
       {/* Image + contenu */}
       <Link href={articleUrl} className="block">
-        <div className="relative aspect-[16/9] overflow-hidden">
+        <div className="relative aspect-[16/9] overflow-hidden img-watermark img-watermark-lg">
           {article.image_url && (
             <Image
               src={article.image_url}
