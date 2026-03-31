@@ -47,6 +47,9 @@ export const metadata: Metadata = {
   authors: [{ name: SITE_NAME }],
   creator: SITE_NAME,
   publisher: SITE_NAME,
+  verification: {
+    google: "kFB0UwSG_KWqN1fjX-e5n5eNQXHcag9mcZCJ0sEc16s",
+  },
   formatDetection: {
     email: false,
     telephone: false,
