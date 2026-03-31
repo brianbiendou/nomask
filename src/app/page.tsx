@@ -1,6 +1,5 @@
 import {
   getArticles,
-  getCarouselArticles,
   getBreakingNews,
   getMostRecentArticles,
   getArticlesByCategory,
@@ -15,55 +14,36 @@ export const revalidate = 300;
 
 export default async function HomePage() {
   const [
-    featuredArticles,
     breakingNews,
     latestArticles,
     mostRecent,
-    ,  // politiqueArticles (unused)
     techArticles,
-    ,  // societeArticles (unused)
     sportArticles,
     economieArticles,
-    sciencesArticles,
     buyingGuides,
   ] = await Promise.all([
-    getCarouselArticles(),
     getBreakingNews(),
-    getArticles({ limit: 20 }),
-    getMostRecentArticles("fr", 20),
-    getArticlesByCategory("politique", "fr", 4),
+    getArticles({ limit: 30 }),
+    getMostRecentArticles("fr", 30),
     getArticlesByCategory("tech", "fr", 4),
-    getArticlesByCategory("societe", "fr", 4),
     getArticlesByCategory("sport", "fr", 3),
     getArticlesByCategory("economie", "fr", 3),
-    getArticlesByCategory("sciences", "fr", 3),
     getArticlesBySubcategory("tech", "guides-achat", "fr", 4),
   ]);
 
-  // Hero principal + sidebar
-  const heroArticle = featuredArticles[0] || latestArticles[0];
-  const sidebarArticles = (featuredArticles.length > 1
-    ? featuredArticles.slice(1, 4)
-    : latestArticles.slice(1, 4)
-  );
+  // Chronologique : hero = le + récent, sidebar = 3 suivants, etc.
+  const heroArticle = latestArticles[0];
+  const sidebarArticles = latestArticles.slice(1, 4);
 
-  // Articles grille "À lire absolument"
-  const heroIds = new Set([heroArticle?.id, ...sidebarArticles.map((a) => a.id)]);
-  const mustReadArticles = latestArticles
-    .filter((a) => !heroIds.has(a.id))
-    .slice(0, 3);
+  // "À lire absolument" = les 3 suivants
+  const mustReadArticles = latestArticles.slice(4, 7);
 
-  // Toute l'actualité & NoMask+
-  const allUsed = new Set([...heroIds, ...mustReadArticles.map((a) => a.id)]);
-  const remainingArticles = mostRecent.filter((a) => !allUsed.has(a.id));
-  
-  const plusArticles = remainingArticles.length >= 3
-    ? remainingArticles.slice(0, 3)
-    : [...remainingArticles, ...mostRecent.filter((a) => !allUsed.has(a.id) && !remainingArticles.find((r) => r.id === a.id))].slice(0, 3).length >= 3
-      ? [...remainingArticles, ...mostRecent.filter((a) => !allUsed.has(a.id) && !remainingArticles.find((r) => r.id === a.id))].slice(0, 3)
-      : mostRecent.slice(0, 3);
-  const plusIds = new Set(plusArticles.map((a) => a.id));
-  const allNewsArticles = remainingArticles.filter((a) => !plusIds.has(a.id));
+  // NoMask+ = les 3 suivants
+  const topIds = new Set(latestArticles.slice(0, 10).map((a) => a.id));
+  const plusArticles = latestArticles.slice(7, 10);
+
+  // Toute l'actualité = le reste (dédupliqué)
+  const allNewsArticles = mostRecent.filter((a) => !topIds.has(a.id));
 
   // Trending tags
   const trendingTopics =

@@ -1,0 +1,16 @@
+aiohttp>=3.9.0
+beautifulsoup4>=4.12.0
+supabase>=2.0.0
+python-dotenv>=1.0.0
+slugify>=0.0.1
+python-slugify>=8.0.0
+Pillow>=10.0.0
+readability-lxml>=0.8.1
+lxml>=5.0.0
+lxml_html_clean>=0.1.0
+fastapi>=0.115.0
+uvicorn>=0.34.0
+pydantic>=2.10.0
+python-dateutil>=2.9.0
+requests>=2.32.0
+httpx>=0.28.0

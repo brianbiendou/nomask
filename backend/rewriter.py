@@ -1,0 +1,173 @@
+"""Module de réécriture — réécrit un article via gemma3:12b (Ollama local).
+
+Utilise le modèle gemma3:12b via l'API Ollama pour :
+1. Réécrire le contenu complet de l'article
+2. Réécrire le titre
+3. Réécrire l'extrait/chapô
+
+Le point de vue (perspective) est injecté dans le prompt système.
+"""
+import json
+import re
+
+import requests
+from slugify import slugify
+from bs4 import BeautifulSoup
+
+from config import (
+    DEFAULT_PERSPECTIVE,
+    OLLAMA_BASE_URL,
+    OLLAMA_MODEL,
+    OLLAMA_TIMEOUT,
+)
+
+
+def _call_ollama(system_prompt: str, user_prompt: str, temperature: float = 0.7) -> str:
+    """Appelle Ollama et retourne la réponse texte."""
+    try:
+        resp = requests.post(
+            f"{OLLAMA_BASE_URL}/api/generate",
+            json={
+                "model": OLLAMA_MODEL,
+                "system": system_prompt,
+                "prompt": user_prompt,
+                "stream": False,
+                "options": {
+                    "temperature": temperature,
+                    "num_predict": 4096,
+                    "top_p": 0.9,
+                },
+            },
+            timeout=OLLAMA_TIMEOUT,
+        )
+        resp.raise_for_status()
+        return resp.json().get("response", "").strip()
+    except requests.exceptions.ConnectionError:
+        print("  [WARN] Ollama non disponible, réécriture structurelle utilisée.")
+        return ""
+    except Exception as e:
+        print(f"  [WARN] Erreur Ollama: {e}")
+        return ""
+
+
+# ────────────────────────── PROMPTS ──────────────────────────
+
+SYSTEM_REWRITE_CONTENT = """Tu es un rédacteur journalistique francophone expert. Tu dois RÉÉCRIRE INTÉGRALEMENT un article pour le site NoMask.
+
+RÈGLES STRICTES :
+- Réécris TOUT le texte avec tes propres mots, ne copie AUCUNE phrase telle quelle
+- Garde TOUTES les informations factuelles (noms, chiffres, dates, lieux)
+- Le texte final doit faire une longueur similaire à l'original
+- Écris en HTML avec des balises <h2>, <h3>, <p>, <strong>, <em>
+- Commence directement par le contenu HTML, PAS de ```html ni de commentaires
+- N'invente AUCUNE information
+- Utilise un français impeccable, riche et varié
+- Point de vue : {perspective}"""
+
+SYSTEM_REWRITE_TITLE = """Tu es un rédacteur de titres d'articles expert en français. Tu dois réécrire le titre donné.
+
+RÈGLES :
+- Garde toutes les informations clés (noms, chiffres, dates)
+- Rends le titre accrocheur et unique
+- Maximum 100 caractères
+- Ne mets PAS de guillemets autour du titre
+- Réponds UNIQUEMENT avec le nouveau titre, rien d'autre
+- Point de vue : {perspective}"""
+
+SYSTEM_REWRITE_EXCERPT = """Tu es un rédacteur journalistique francophone. Tu dois réécrire le chapô (extrait) d'un article.
+
+RÈGLES :
+- Réécris avec tes propres mots
+- Garde les infos clés
+- Maximum 250 caractères
+- 1 à 2 phrases maximum
+- Réponds UNIQUEMENT avec le nouveau chapô
+- Point de vue : {perspective}"""
+
+
+# ────────────────────────── FONCTIONS PUBLIQUES ──────────────────────────
+
+def rewrite_content(
+    content_html: str,
+    content_text: str,
+    perspective: str = DEFAULT_PERSPECTIVE,
+) -> str:
+    """Réécrit le contenu HTML via gemma3:12b."""
+    system = SYSTEM_REWRITE_CONTENT.format(perspective=perspective)
+
+    # On envoie le texte brut pour éviter la confusion avec le HTML source
+    user_prompt = f"""Voici l'article original à réécrire :
+
+{content_text[:6000]}
+
+Réécris cet article INTÉGRALEMENT en HTML (h2, h3, p, strong, em). Garde toutes les infos factuelles mais reformule tout avec tes propres mots."""
+
+    result = _call_ollama(system, user_prompt, temperature=0.7)
+
+    if not result:
+        # Fallback : retourne le contenu original nettoyé
+        return content_html
+
+    # Nettoie le résultat (enlève les blocs code markdown si présents)
+    result = re.sub(r'^```html?\s*\n?', '', result)
+    result = re.sub(r'\n?```\s*$', '', result)
+    result = result.strip()
+
+    # Vérifie que c'est bien du HTML
+    if not any(tag in result for tag in ["<p>", "<h2>", "<h3>", "<div>"]):
+        # Wrappe en paragraphes si c'est du texte brut
+        paragraphs = result.split("\n\n")
+        result = "".join(f"<p>{p.strip()}</p>" for p in paragraphs if p.strip())
+
+    return result
+
+
+def rewrite_title(title: str, perspective: str = DEFAULT_PERSPECTIVE) -> str:
+    """Réécrit le titre via gemma3:12b."""
+    system = SYSTEM_REWRITE_TITLE.format(perspective=perspective)
+    user_prompt = f"Titre original : {title}"
+
+    result = _call_ollama(system, user_prompt, temperature=0.8)
+
+    if not result:
+        return title
+
+    # Nettoie : enlève guillemets, sauts de ligne, etc.
+    result = result.strip().strip('"').strip("'").strip("«").strip("»")
+    # Prend seulement la première ligne
+    result = result.split("\n")[0].strip()
+
+    # Si trop long ou vide, fallback
+    if len(result) > 150 or len(result) < 10:
+        return title
+
+    return result
+
+
+def rewrite_excerpt(excerpt: str, perspective: str = DEFAULT_PERSPECTIVE) -> str:
+    """Réécrit l'extrait via gemma3:12b."""
+    system = SYSTEM_REWRITE_EXCERPT.format(perspective=perspective)
+    user_prompt = f"Chapô original : {excerpt}"
+
+    result = _call_ollama(system, user_prompt, temperature=0.7)
+
+    if not result:
+        return excerpt
+
+    # Nettoie
+    result = result.strip().strip('"').strip("'")
+    result = result.split("\n")[0].strip()
+
+    if len(result) > 300:
+        result = result[:297] + "..."
+
+    if len(result) < 20:
+        return excerpt
+
+    return result
+
+
+def generate_slug(title: str) -> str:
+    """Génère un slug unique à partir du titre."""
+    base_slug = slugify(title, max_length=80)
+    return base_slug

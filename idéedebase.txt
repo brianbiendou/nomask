@@ -1,3 +1,20 @@
+Terminal 1 — Backend Python :
+
+cd d:\MesApps\deploy\nomask\backend; uvicorn server:app --host 0.0.0.0 --port 8000 --reload
+
+Terminal 2 — Frontend Next.js :
+
+cd d:\MesApps\deploy\nomask; npx next dev --turbopack
+
+Terminal 3 — Vérification :
+
+Invoke-RestMethod -Uri "http://localhost:8000/health"
+
+
+
+
+
+
 OK, je crois que tu connais le site Le Figaro. Il y a aussi un autre site, tu peux aller vérifier, on voit tout le contenu. Ça s'appelle le figaro slash bon plan. En fait, si tu connais bien, bon, tu pourras scraper tout ça. En fait, c'est un site qui écrit énormément d'articles. D'ailleurs, j'ai quelques préoccupations, mais j'aimerais voir comment je peux faire ça de mon côté. C'est que comment est-ce que, par exemple, Le Figaro gagne de l'argent ? Par exemple, est-ce que c'est le fait qu'ils aient du trafic sur leur site et ils mettent les publicités, gagnent de l'argent ? Ça, je ne sais pas, premier truc. Deuxième truc, c'est selon toi, quelle peut être la meilleure méthode pour faire comme Le Figaro, mais dans le long terme ? Déjà, est-ce que Le Figaro, eux, ils font la publicité sur leurs articles ? C'est-à-dire des articles qu'ils écrivent, comment ça fait pour apparaître sur la partie news de nos téléphones Android ? Parce que la partie, on va souvent les articles, les nouvelles, comment ça fait ? Est-ce qu'ils font la publicité ? Et aussi, j'aimerais que tu me dises comment moi, je peux faire comme eux. Peut-être que tu me dis, ça prend du temps petit à petit ou si tu as une petite code à me donner, je suis preneur. C'est que j'ai envie de faire un site comme Le Figaro, donc tu pourras me donner quelques exemples de noms de domaines que je peux utiliser afin de publier les articles, surtout des articles célèbres. C'est-à-dire des articles où je veux surfer sur le buzz. En fait, je veux écrire les articles 3, 4, 5, 10 articles par jour. Est-ce que le fait de mettre ça et de commencer à indexer mes articles et tout, est-ce que ça va suffire à ce que je sois reconnu et mes articles font le tour et tout. Bref, c'est comment là, j'ai envie de créer le site, de publier les articles chaque jour, limite chaque heure. Comment je pourrais faire en sorte de réussir cela, d'être très indexé, d'être célèbre, en espérant qu'il va bien surfer sur le buzz sur toi à la limite des trucs. Quoi d'autre ? Et comment je pourrais gagner de l'argent avec ça ? Est-ce qu'il y a des moyens pour accélérer aussi ça, même si c'est payant, tu me dis. Est-ce qu'il y a des moyens pour accélérer ça ? Par exemple, tous les sites qui proposent d'améliorer le SEO et tout, est-ce qu'il y a des trucs dont moi, je ne peux pas faire ou ne peux pas appliquer plutôt que de payer ces services ? La troisième question, essaie de répondre à toutes ces questions-là que je me questionne.
 
 Tu poses en fait les bonnes questions : trafic, SEO, Google News, publicité, automatisation… C’est exactement comme ça que fonctionnent les gros sites médias (comme Le Figaro). Je vais tout t’expliquer simplement mais de manière stratégique pour le long terme.
