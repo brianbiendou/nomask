@@ -37,7 +37,7 @@ export default function AdminLoginPage() {
         {/* Logo */}
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 mb-2">
-            <div className="w-10 h-10 bg-[#E84D0E] rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 bg-[#DC2626] rounded-xl flex items-center justify-center">
               <span className="text-white font-bold text-lg">N</span>
             </div>
             <span className="text-2xl font-bold text-gray-900">NoMask</span>
@@ -56,7 +56,7 @@ export default function AdminLoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900
-                focus:outline-none focus:ring-2 focus:ring-[#E84D0E]/20 focus:border-[#E84D0E]
+                focus:outline-none focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626]
                 transition-all"
               placeholder="admin@nomask.fr"
               required
@@ -72,7 +72,7 @@ export default function AdminLoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900
-                focus:outline-none focus:ring-2 focus:ring-[#E84D0E]/20 focus:border-[#E84D0E]
+                focus:outline-none focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626]
                 transition-all"
               placeholder="••••••••"
               required
@@ -88,8 +88,8 @@ export default function AdminLoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 px-4 bg-[#E84D0E] text-white font-semibold rounded-xl
-              hover:bg-[#C7400A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3 px-4 bg-[#DC2626] text-white font-semibold rounded-xl
+              hover:bg-[#B91C1C] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">

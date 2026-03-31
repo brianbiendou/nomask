@@ -121,8 +121,8 @@ export default function SourcesPage() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-4 py-2 bg-[#E84D0E] text-white rounded-xl text-sm font-medium
-              hover:bg-[#C7400A] disabled:opacity-50 transition-colors shadow-sm flex items-center gap-2"
+            className="px-4 py-2 bg-[#DC2626] text-white rounded-xl text-sm font-medium
+              hover:bg-[#B91C1C] disabled:opacity-50 transition-colors shadow-sm flex items-center gap-2"
           >
             {saving && <Loader2 size={14} className="animate-spin" />}
             Sauvegarder
@@ -141,7 +141,7 @@ export default function SourcesPage() {
       {/* Loading */}
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <Loader2 size={24} className="animate-spin text-[#E84D0E]" />
+          <Loader2 size={24} className="animate-spin text-[#DC2626]" />
           <span className="ml-2 text-sm text-gray-500">Chargement des sources…</span>
         </div>
       ) : (
@@ -158,12 +158,12 @@ export default function SourcesPage() {
               {/* Icon */}
               <div
                 className={`p-2.5 rounded-xl shrink-0 ${
-                  source.enabled ? "bg-[#E84D0E]/5" : "bg-gray-100"
+                  source.enabled ? "bg-[#DC2626]/5" : "bg-gray-100"
                 }`}
               >
                 <Globe
                   size={18}
-                  className={source.enabled ? "text-[#E84D0E]" : "text-gray-400"}
+                  className={source.enabled ? "text-[#DC2626]" : "text-gray-400"}
                 />
               </div>
 
@@ -183,7 +183,7 @@ export default function SourcesPage() {
                   href={source.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-gray-400 hover:text-[#E84D0E] flex items-center gap-1 transition-colors"
+                  className="text-xs text-gray-400 hover:text-[#DC2626] flex items-center gap-1 transition-colors"
                 >
                   {source.url}
                   <ExternalLink size={10} />
@@ -226,7 +226,7 @@ export default function SourcesPage() {
                     min={1}
                     max={72}
                     className="w-14 rounded-lg border border-gray-200 px-2 py-1.5 text-xs text-center
-                      focus:ring-2 focus:ring-[#E84D0E]/20 focus:border-[#E84D0E] outline-none"
+                      focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626] outline-none"
                   />
                   <span className="text-[10px] text-gray-400">h</span>
                 </div>
@@ -238,7 +238,7 @@ export default function SourcesPage() {
                   title={source.enabled ? "Désactiver" : "Activer"}
                 >
                   {source.enabled ? (
-                    <ToggleRight size={22} className="text-[#E84D0E]" />
+                    <ToggleRight size={22} className="text-[#DC2626]" />
                   ) : (
                     <ToggleLeft size={22} className="text-gray-300" />
                   )}
@@ -274,7 +274,7 @@ export default function SourcesPage() {
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="Ex: 01net"
                 className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm
-                  focus:ring-2 focus:ring-[#E84D0E]/20 focus:border-[#E84D0E] outline-none"
+                  focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626] outline-none"
               />
             </div>
             <div>
@@ -286,7 +286,7 @@ export default function SourcesPage() {
                 onChange={(e) => setNewUrl(e.target.value)}
                 placeholder="https://www.01net.com"
                 className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm
-                  focus:ring-2 focus:ring-[#E84D0E]/20 focus:border-[#E84D0E] outline-none"
+                  focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626] outline-none"
               />
             </div>
             <div>
@@ -299,7 +299,7 @@ export default function SourcesPage() {
                 onChange={(e) => setNewInterval(Number(e.target.value) || 2)}
                 min={1}
                 className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm
-                  focus:ring-2 focus:ring-[#E84D0E]/20 focus:border-[#E84D0E] outline-none"
+                  focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626] outline-none"
               />
             </div>
           </div>
@@ -307,8 +307,8 @@ export default function SourcesPage() {
             <button
               onClick={addSource}
               disabled={!newName || !newUrl}
-              className="px-4 py-2 bg-[#E84D0E] text-white rounded-xl text-sm font-medium
-                hover:bg-[#C7400A] disabled:opacity-50 transition-colors"
+              className="px-4 py-2 bg-[#DC2626] text-white rounded-xl text-sm font-medium
+                hover:bg-[#B91C1C] disabled:opacity-50 transition-colors"
             >
               Ajouter
             </button>
@@ -325,7 +325,7 @@ export default function SourcesPage() {
           onClick={() => setShowAdd(true)}
           className="mt-4 w-full flex items-center justify-center gap-2 py-3 rounded-2xl
             border-2 border-dashed border-gray-200 text-gray-400 text-sm font-medium
-            hover:border-[#E84D0E] hover:text-[#E84D0E] transition-colors"
+            hover:border-[#DC2626] hover:text-[#DC2626] transition-colors"
         >
           <Plus size={16} />
           Ajouter une source

@@ -373,7 +373,7 @@ function WorkflowContent() {
                   value={sourceUrl}
                   onChange={(e) => setSourceUrl(e.target.value)}
                   className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm
-                    focus:ring-2 focus:ring-[#E84D0E]/20 focus:border-[#E84D0E] outline-none mb-3"
+                    focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626] outline-none mb-3"
                 >
                   {PRESET_SOURCES.map((s) => (
                     <option key={s.url} value={s.url}>{s.name}</option>
@@ -393,7 +393,7 @@ function WorkflowContent() {
                       min={1}
                       max={168}
                       className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm
-                        focus:ring-2 focus:ring-[#E84D0E]/20 focus:border-[#E84D0E] outline-none"
+                        focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626] outline-none"
                     />
                   </div>
                   <div>
@@ -407,7 +407,7 @@ function WorkflowContent() {
                       min={1}
                       max={50}
                       className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm
-                        focus:ring-2 focus:ring-[#E84D0E]/20 focus:border-[#E84D0E] outline-none"
+                        focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626] outline-none"
                     />
                   </div>
                 </div>
@@ -422,7 +422,7 @@ function WorkflowContent() {
                   value={sourceUrl}
                   onChange={(e) => setSourceUrl(e.target.value)}
                   className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm
-                    focus:ring-2 focus:ring-[#E84D0E]/20 focus:border-[#E84D0E] outline-none mb-3"
+                    focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626] outline-none mb-3"
                 >
                   {PRESET_SOURCES.map((s) => (
                     <option key={s.url} value={s.url}>{s.name}</option>
@@ -441,7 +441,7 @@ function WorkflowContent() {
                     min={1}
                     max={20}
                     className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm
-                      focus:ring-2 focus:ring-[#E84D0E]/20 focus:border-[#E84D0E] outline-none"
+                      focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626] outline-none"
                   />
                 </div>
 
@@ -450,8 +450,8 @@ function WorkflowContent() {
                   onClick={fetchTrending}
                   disabled={trendingLoading}
                   className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl
-                    bg-orange-50 text-[#E84D0E] border border-[#E84D0E]/20 font-medium text-xs
-                    hover:bg-orange-100 disabled:opacity-50 transition-colors mb-3"
+                    bg-red-50 text-[#DC2626] border border-[#DC2626]/20 font-medium text-xs
+                    hover:bg-red-100 disabled:opacity-50 transition-colors mb-3"
                 >
                   {trendingLoading ? (
                     <Loader2 size={14} className="animate-spin" />
@@ -478,7 +478,7 @@ function WorkflowContent() {
                   rows={5}
                   placeholder="https://www.numerama.com/article-example..."
                   className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm
-                    resize-none focus:ring-2 focus:ring-[#E84D0E]/20 focus:border-[#E84D0E] outline-none mb-3"
+                    resize-none focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626] outline-none mb-3"
                 />
               </>
             )}
@@ -491,7 +491,7 @@ function WorkflowContent() {
               value={perspective}
               onChange={(e) => setPerspective(e.target.value)}
               className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm
-                focus:ring-2 focus:ring-[#E84D0E]/20 focus:border-[#E84D0E] outline-none mb-3"
+                focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626] outline-none mb-3"
             >
               {PERSPECTIVES.map((p) => (
                 <option key={p} value={p}>{p}</option>
@@ -504,7 +504,7 @@ function WorkflowContent() {
                 type="checkbox"
                 checked={force}
                 onChange={(e) => setForce(e.target.checked)}
-                className="w-4 h-4 rounded border-gray-300 text-[#E84D0E] focus:ring-[#E84D0E]"
+                className="w-4 h-4 rounded border-gray-300 text-[#DC2626] focus:ring-[#DC2626]"
               />
               <span className="text-xs text-gray-600">
                 Forcer la republication (écrase les existants)
@@ -524,8 +524,8 @@ function WorkflowContent() {
                 onClick={launchTrendingPipeline}
                 disabled={launching || selectedTrendingUrls.size === 0}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl
-                  bg-[#E84D0E] text-white font-medium text-sm
-                  hover:bg-[#C7400A] disabled:opacity-50 transition-colors shadow-sm"
+                  bg-[#DC2626] text-white font-medium text-sm
+                  hover:bg-[#B91C1C] disabled:opacity-50 transition-colors shadow-sm"
               >
                 {launching ? (
                   <Loader2 size={16} className="animate-spin" />
@@ -543,8 +543,8 @@ function WorkflowContent() {
                 onClick={handleLaunch}
                 disabled={launching}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl
-                  bg-[#E84D0E] text-white font-medium text-sm
-                  hover:bg-[#C7400A] disabled:opacity-50 transition-colors shadow-sm"
+                  bg-[#DC2626] text-white font-medium text-sm
+                  hover:bg-[#B91C1C] disabled:opacity-50 transition-colors shadow-sm"
               >
                 {launching ? (
                   <Loader2 size={16} className="animate-spin" />
@@ -571,7 +571,7 @@ function WorkflowContent() {
                     onClick={() => { setActiveJobId(j.id); setExpandedArticles(new Set()); }}
                     className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-colors
                       ${activeJobId === j.id
-                        ? "bg-[#E84D0E]/5 text-[#E84D0E] font-medium"
+                        ? "bg-[#DC2626]/5 text-[#DC2626] font-medium"
                         : "hover:bg-gray-50 text-gray-600"
                       }`}
                   >
@@ -606,13 +606,13 @@ function WorkflowContent() {
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
               <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Flame size={16} className="text-[#E84D0E]" />
+                  <Flame size={16} className="text-[#DC2626]" />
                   <h2 className="font-semibold text-gray-900 text-sm">
                     Articles Trending ({trendingResults.totalTrending})
                   </h2>
                 </div>
                 {selectedTrendingUrls.size > 0 && (
-                  <span className="text-xs font-medium text-[#E84D0E] bg-orange-50 px-2 py-1 rounded-lg">
+                  <span className="text-xs font-medium text-[#DC2626] bg-red-50 px-2 py-1 rounded-lg">
                     {selectedTrendingUrls.size} sélectionné{selectedTrendingUrls.size > 1 ? "s" : ""}
                   </span>
                 )}
@@ -635,7 +635,7 @@ function WorkflowContent() {
                     </div>
                     <button
                       onClick={() => selectAllTrending(articles)}
-                      className="text-[10px] font-medium text-[#E84D0E] hover:underline"
+                      className="text-[10px] font-medium text-[#DC2626] hover:underline"
                     >
                       {articles.every((a) => selectedTrendingUrls.has(a.url))
                         ? "Tout désélectionner"
@@ -654,12 +654,12 @@ function WorkflowContent() {
                           type="checkbox"
                           checked={selectedTrendingUrls.has(article.url)}
                           onChange={() => toggleTrendingUrl(article.url)}
-                          className="w-4 h-4 mt-0.5 rounded border-gray-300 text-[#E84D0E] focus:ring-[#E84D0E] shrink-0"
+                          className="w-4 h-4 mt-0.5 rounded border-gray-300 text-[#DC2626] focus:ring-[#DC2626] shrink-0"
                         />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             {article.rank && (
-                              <span className="text-[10px] font-bold text-[#E84D0E] bg-orange-50 px-1.5 py-0.5 rounded shrink-0">
+                              <span className="text-[10px] font-bold text-[#DC2626] bg-red-50 px-1.5 py-0.5 rounded shrink-0">
                                 #{article.rank}
                               </span>
                             )}
@@ -682,7 +682,7 @@ function WorkflowContent() {
                               href={article.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-[10px] text-[#E84D0E] hover:underline flex items-center gap-0.5"
+                              className="text-[10px] text-[#DC2626] hover:underline flex items-center gap-0.5"
                               onClick={(e) => e.stopPropagation()}
                             >
                               <ExternalLink size={9} />
@@ -741,18 +741,18 @@ function WorkflowContent() {
                       status === "completed"
                         ? "ring-2 ring-green-500 bg-green-50"
                         : status === "running"
-                        ? "ring-2 ring-[#E84D0E] bg-[#E84D0E]/5"
+                        ? "ring-2 ring-[#DC2626] bg-[#DC2626]/5"
                         : status === "failed"
                         ? "ring-2 ring-red-500 bg-red-50"
                         : "ring-1 ring-gray-200 bg-gray-50";
                     const iconColor =
                       status === "completed" ? "text-green-600"
-                        : status === "running" ? "text-[#E84D0E]"
+                        : status === "running" ? "text-[#DC2626]"
                         : status === "failed" ? "text-red-500"
                         : "text-gray-400";
                     const labelColor =
                       status === "completed" ? "text-green-600"
-                        : status === "running" ? "text-[#E84D0E]"
+                        : status === "running" ? "text-[#DC2626]"
                         : status === "failed" ? "text-red-500"
                         : "text-gray-400";
 
@@ -768,7 +768,7 @@ function WorkflowContent() {
                             {status === "completed" ? (
                               <CheckCircle2 size={20} className="text-green-600" />
                             ) : status === "running" ? (
-                              <Loader2 size={20} className="text-[#E84D0E] animate-spin" />
+                              <Loader2 size={20} className="text-[#DC2626] animate-spin" />
                             ) : status === "failed" ? (
                               <AlertCircle size={20} className="text-red-500" />
                             ) : (
@@ -850,7 +850,7 @@ function WorkflowContent() {
                             ) : (
                               <Loader2
                                 size={16}
-                                className="text-[#E84D0E] animate-spin shrink-0"
+                                className="text-[#DC2626] animate-spin shrink-0"
                               />
                             )}
 
@@ -866,7 +866,7 @@ function WorkflowContent() {
                             </div>
 
                             {isProcessing && (
-                              <span className="text-[10px] text-[#E84D0E] font-medium whitespace-nowrap">
+                              <span className="text-[10px] text-[#DC2626] font-medium whitespace-nowrap">
                                 En cours
                               </span>
                             )}
@@ -887,7 +887,7 @@ function WorkflowContent() {
                                     href={article.url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-[11px] text-[#E84D0E] hover:underline flex items-center gap-1 break-all"
+                                    className="text-[11px] text-[#DC2626] hover:underline flex items-center gap-1 break-all"
                                   >
                                     <ExternalLink size={10} className="shrink-0" />
                                     <span className="truncate">{article.url}</span>
@@ -907,7 +907,7 @@ function WorkflowContent() {
                                         ) : step.status === "failed" ? (
                                           <AlertCircle size={11} className="text-red-500" />
                                         ) : step.status === "running" ? (
-                                          <Loader2 size={11} className="text-[#E84D0E] animate-spin" />
+                                          <Loader2 size={11} className="text-[#DC2626] animate-spin" />
                                         ) : (
                                           <Circle size={11} className="text-gray-300" />
                                         )}

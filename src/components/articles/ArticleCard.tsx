@@ -244,7 +244,15 @@ export default function ArticleCard({
     return (
       <article className="group py-3 border-b border-gray-100 last:border-0">
         <Link href={articleUrl}>
-          <h3 className="text-[14px] font-bold text-dark hover:text-brand transition-colors line-clamp-3 leading-snug">
+          {article.category && (
+            <span
+              className="text-[10px] font-bold uppercase tracking-wider"
+              style={{ color: article.category.color }}
+            >
+              {article.category.name}
+            </span>
+          )}
+          <h3 className="text-[14px] font-bold text-dark hover:text-brand transition-colors line-clamp-3 leading-snug mt-0.5">
             {article.title}
           </h3>
         </Link>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Breadcrumb from "@/components/shared/Breadcrumb";
+import DynamicSidebar from "@/components/shared/DynamicSidebar";
 import { SITE_NAME } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -9,10 +10,12 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6">
+    <div className="max-w-255 mx-auto px-4 py-6">
       <Breadcrumb items={[{ label: "À propos" }]} />
 
-      <h1 className="text-3xl font-black font-sans mt-4 mb-6">À propos de NoMask</h1>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-4">
+      <div className="lg:col-span-2">
+      <h1 className="text-3xl font-black font-sans mb-6">À propos de NoMask</h1>
 
       <div className="text-base leading-relaxed text-gray-800 space-y-4">
         <p>
@@ -99,6 +102,10 @@ export default function AboutPage() {
             </a>
           </li>
         </ul>
+      </div>
+      </div>
+
+      <DynamicSidebar />
       </div>
     </div>
   );

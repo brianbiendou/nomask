@@ -95,8 +95,8 @@ export default function SettingsPage() {
           <button
             onClick={handleSave}
             disabled={autoLoading}
-            className="px-5 py-2.5 bg-[#E84D0E] text-white rounded-xl text-sm font-medium
-              hover:bg-[#C7400A] disabled:opacity-50 transition-colors shadow-sm flex items-center gap-2"
+            className="px-5 py-2.5 bg-[#DC2626] text-white rounded-xl text-sm font-medium
+              hover:bg-[#B91C1C] disabled:opacity-50 transition-colors shadow-sm flex items-center gap-2"
           >
             {autoLoading && <Loader2 size={14} className="animate-spin" />}
             Sauvegarder
@@ -125,11 +125,11 @@ export default function SettingsPage() {
                 className="flex items-center gap-2"
               >
                 {autoMode ? (
-                  <ToggleRight size={28} className="text-[#E84D0E]" />
+                  <ToggleRight size={28} className="text-[#DC2626]" />
                 ) : (
                   <ToggleLeft size={28} className="text-gray-300" />
                 )}
-                <span className={`text-xs font-medium ${autoMode ? "text-[#E84D0E]" : "text-gray-400"}`}>
+                <span className={`text-xs font-medium ${autoMode ? "text-[#DC2626]" : "text-gray-400"}`}>
                   {autoMode ? "Actif" : "Inactif"}
                 </span>
               </button>
@@ -149,7 +149,7 @@ export default function SettingsPage() {
                   min={1}
                   max={72}
                   className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm
-                    focus:ring-2 focus:ring-[#E84D0E]/20 focus:border-[#E84D0E] outline-none"
+                    focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626] outline-none"
                 />
               </div>
               <div>
@@ -163,7 +163,7 @@ export default function SettingsPage() {
                   min={1}
                   max={50}
                   className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm
-                    focus:ring-2 focus:ring-[#E84D0E]/20 focus:border-[#E84D0E] outline-none"
+                    focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626] outline-none"
                 />
               </div>
             </div>
@@ -189,8 +189,8 @@ export default function SettingsPage() {
         {/* === Section: IA / Ollama === */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
           <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 rounded-xl bg-[#E84D0E]/5">
-              <Zap size={18} className="text-[#E84D0E]" />
+            <div className="p-2 rounded-xl bg-[#DC2626]/5">
+              <Zap size={18} className="text-[#DC2626]" />
             </div>
             <div>
               <h2 className="font-semibold text-gray-900 text-sm">
@@ -211,7 +211,7 @@ export default function SettingsPage() {
                 value={perspective}
                 onChange={(e) => setPerspective(e.target.value)}
                 className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm
-                  focus:ring-2 focus:ring-[#E84D0E]/20 focus:border-[#E84D0E] outline-none"
+                  focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626] outline-none"
               >
                 {PERSPECTIVES.map((p) => (
                   <option key={p} value={p}>{p}</option>
@@ -228,7 +228,7 @@ export default function SettingsPage() {
                   value={ollamaUrl}
                   onChange={(e) => setOllamaUrl(e.target.value)}
                   className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm
-                    focus:ring-2 focus:ring-[#E84D0E]/20 focus:border-[#E84D0E] outline-none"
+                    focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626] outline-none"
                 />
               </div>
               <div>
@@ -239,7 +239,7 @@ export default function SettingsPage() {
                   value={ollamaModel}
                   onChange={(e) => setOllamaModel(e.target.value)}
                   className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm
-                    focus:ring-2 focus:ring-[#E84D0E]/20 focus:border-[#E84D0E] outline-none"
+                    focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626] outline-none"
                 />
               </div>
             </div>
@@ -255,7 +255,7 @@ export default function SettingsPage() {
                 min={30}
                 max={600}
                 className="w-32 rounded-xl border border-gray-200 px-3 py-2.5 text-sm
-                  focus:ring-2 focus:ring-[#E84D0E]/20 focus:border-[#E84D0E] outline-none"
+                  focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626] outline-none"
               />
             </div>
           </div>
@@ -289,7 +289,7 @@ export default function SettingsPage() {
                 min={1}
                 max={168}
                 className="w-32 rounded-xl border border-gray-200 px-3 py-2.5 text-sm
-                  focus:ring-2 focus:ring-[#E84D0E]/20 focus:border-[#E84D0E] outline-none"
+                  focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626] outline-none"
               />
             </div>
 
@@ -298,7 +298,7 @@ export default function SettingsPage() {
                 type="checkbox"
                 checked={forceByDefault}
                 onChange={(e) => setForceByDefault(e.target.checked)}
-                className="w-4 h-4 rounded border-gray-300 text-[#E84D0E] focus:ring-[#E84D0E]"
+                className="w-4 h-4 rounded border-gray-300 text-[#DC2626] focus:ring-[#DC2626]"
               />
               <div>
                 <span className="text-sm text-gray-700">

@@ -8,6 +8,7 @@ import {
 import ArticleCard from "@/components/articles/ArticleCard";
 import Breadcrumb from "@/components/shared/Breadcrumb";
 import Newsletter from "@/components/home/Newsletter";
+import DynamicSidebar from "@/components/shared/DynamicSidebar";
 import { SITE_NAME, SITE_URL } from "@/lib/utils";
 
 export const revalidate = 300;
@@ -68,7 +69,7 @@ export default async function CategoryPage({ params }: PageProps) {
   if (!category) notFound();
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
+    <div className="max-w-255 mx-auto px-4 py-6">
       <Breadcrumb items={[{ label: category.name }]} />
 
       {/* Header de catégorie */}
@@ -107,9 +108,10 @@ export default async function CategoryPage({ params }: PageProps) {
         </div>
 
         {/* Sidebar */}
-        <aside className="space-y-6">
-          <Newsletter />
-        </aside>
+        <DynamicSidebar
+          excludeIds={articles.map((a) => a.id)}
+          categorySlug={categorySlug}
+        />
       </div>
     </div>
   );

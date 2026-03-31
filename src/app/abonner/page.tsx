@@ -68,7 +68,7 @@ export default function AbonnerPage() {
         <div className="absolute inset-0 pointer-events-none">
           <div
             className="absolute -top-20 -right-20 w-80 h-80 rounded-full opacity-10"
-            style={{ background: "radial-gradient(circle, #E84D0E, transparent 70%)" }}
+            style={{ background: "radial-gradient(circle, #DC2626, transparent 70%)" }}
           />
           <div
             className="absolute bottom-0 left-0 w-full h-1 bg-brand"

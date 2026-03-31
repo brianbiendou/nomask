@@ -13,6 +13,7 @@ import {
   Menu,
   X,
   ChevronRight,
+  BarChart3,
 } from "lucide-react";
 
 const navItems = [
@@ -20,6 +21,11 @@ const navItems = [
     name: "Dashboard",
     href: "/brian/biendou/admin",
     icon: LayoutDashboard,
+  },
+  {
+    name: "Articles",
+    href: "/brian/biendou/admin/articles",
+    icon: BarChart3,
   },
   {
     name: "Workflow",
@@ -67,11 +73,11 @@ export default function AdminLayout({
   return (
     <div className="min-h-screen bg-[#FAFAFA] flex overflow-x-hidden">
       {/* Sidebar Desktop */}
-      <aside className="hidden lg:flex lg:flex-col lg:w-64 bg-white border-r border-gray-100 fixed inset-y-0 left-0 z-30">
+      <aside className="hidden lg:flex lg:flex-col lg:w-64 bg-white border-r border-gray-100 fixed top-11 bottom-0 left-0 z-30">
         {/* Logo */}
         <div className="px-6 py-5 border-b border-gray-100">
           <Link href="/brian/biendou/admin" className="flex items-center gap-2.5">
-            <div className="w-9 h-9 bg-[#E84D0E] rounded-lg flex items-center justify-center">
+            <div className="w-9 h-9 bg-[#DC2626] rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">N</span>
             </div>
             <div>
@@ -94,7 +100,7 @@ export default function AdminLayout({
                 href={item.href}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group ${
                   isActive
-                    ? "bg-[#E84D0E]/5 text-[#E84D0E]"
+                    ? "bg-[#DC2626]/5 text-[#DC2626]"
                     : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
                 }`}
               >
@@ -102,13 +108,13 @@ export default function AdminLayout({
                   size={18}
                   className={
                     isActive
-                      ? "text-[#E84D0E]"
+                      ? "text-[#DC2626]"
                       : "text-gray-400 group-hover:text-gray-600"
                   }
                 />
                 {item.name}
                 {isActive && (
-                  <ChevronRight size={14} className="ml-auto text-[#E84D0E]" />
+                  <ChevronRight size={14} className="ml-auto text-[#DC2626]" />
                 )}
               </Link>
             );
@@ -153,7 +159,7 @@ export default function AdminLayout({
             <Menu size={20} className="text-gray-600" />
           </button>
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-[#E84D0E] rounded-lg flex items-center justify-center">
+            <div className="w-7 h-7 bg-[#DC2626] rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-xs">N</span>
             </div>
             <span className="font-bold text-gray-900">NoMask Admin</span>
@@ -189,7 +195,7 @@ export default function AdminLayout({
                     onClick={() => setSidebarOpen(false)}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                       isActive
-                        ? "bg-[#E84D0E]/5 text-[#E84D0E]"
+                        ? "bg-[#DC2626]/5 text-[#DC2626]"
                         : "text-gray-500 hover:bg-gray-50"
                     }`}
                   >

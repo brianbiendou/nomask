@@ -295,3 +295,71 @@ export async function searchArticles(
   if (error) return [];
   return data as ArticleWithRelations[];
 }
+
+/**
+ * Articles pour la sidebar dynamique.
+ * Retourne des articles variés en excluant les IDs fournis.
+ */
+export async function getSidebarArticles(
+  excludeIds: string[] = [],
+  locale: string = "fr",
+  categorySlug?: string
+) {
+  // Seed basé sur le jour pour variation quotidienne
+  const today = new Date();
+  const daySeed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+
+  // Récupérer un pool d'articles récents
+  const { data, error } = await supabase
+    .from("articles")
+    .select(ARTICLE_SELECT)
+    .eq("status", "published")
+    .eq("locale", locale)
+    .order("published_at", { ascending: false })
+    .limit(60);
+
+  if (error || !data) return { alirePlus: [], thematique: [], definitions: [] };
+
+  const articles = (data as ArticleWithRelations[]).filter(
+    (a) => !excludeIds.includes(a.id)
+  );
+
+  // Shuffle déterministe basé sur le jour
+  const shuffled = [...articles].sort((a, b) => {
+    const hashA = (a.id.charCodeAt(0) * 31 + daySeed) % 1000;
+    const hashB = (b.id.charCodeAt(0) * 31 + daySeed) % 1000;
+    return hashA - hashB;
+  });
+
+  // Si une catégorie est fournie, prioriser les articles de cette catégorie
+  const sameCat = categorySlug
+    ? shuffled.filter((a) => a.category?.slug === categorySlug)
+    : [];
+  const otherArticles = categorySlug
+    ? shuffled.filter((a) => a.category?.slug !== categorySlug)
+    : shuffled;
+
+  // "Ne manquez pas" — articles de la même catégorie en priorité, puis variés
+  const alirePlus = categorySlug
+    ? [...sameCat.slice(0, 5), ...otherArticles.slice(0, 5 - Math.min(sameCat.length, 5))].slice(0, 5)
+    : shuffled.slice(0, 5);
+
+  // Thématique — articles de la catégorie courante (avec image), sinon une catégorie aléatoire
+  const withImages = shuffled.filter((a) => a.image_url);
+  const categories = [...new Set(withImages.map((a) => a.category?.slug))];
+  const pickedCat = categorySlug && categories.includes(categorySlug)
+    ? categorySlug
+    : categories[daySeed % categories.length];
+  const thematique = withImages
+    .filter((a) => a.category?.slug === pickedCat)
+    .slice(0, 4);
+
+  // En savoir plus — articles d'une catégorie différente de la courante
+  const otherCats = categories.filter((c) => c !== pickedCat);
+  const defCat = otherCats[(daySeed + 1) % Math.max(otherCats.length, 1)];
+  const definitions = shuffled
+    .filter((a) => a.category?.slug === defCat && !thematique.find((t) => t.id === a.id))
+    .slice(0, 3);
+
+  return { alirePlus, thematique, definitions, thematiqueCategory: pickedCat };
+}

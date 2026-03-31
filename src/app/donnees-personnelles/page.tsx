@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Breadcrumb from "@/components/shared/Breadcrumb";
+import DynamicSidebar from "@/components/shared/DynamicSidebar";
 import { SITE_NAME } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -9,10 +10,12 @@ export const metadata: Metadata = {
 
 export default function DonneesPersonnellesPage() {
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6">
+    <div className="max-w-255 mx-auto px-4 py-6">
       <Breadcrumb items={[{ label: "Données personnelles" }]} />
 
-      <h1 className="text-3xl font-black font-sans mt-4 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-4">
+      <div className="lg:col-span-2">
+      <h1 className="text-3xl font-black font-sans mb-6">
         Politique de protection des données personnelles
       </h1>
 
@@ -124,6 +127,10 @@ export default function DonneesPersonnellesPage() {
           et des Libertés) : <a href="https://www.cnil.fr" className="text-brand hover:underline"
           rel="noopener noreferrer" target="_blank">www.cnil.fr</a>.
         </p>
+      </div>
+      </div>
+
+      <DynamicSidebar />
       </div>
     </div>
   );

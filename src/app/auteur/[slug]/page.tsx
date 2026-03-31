@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { getAuthorBySlug, getArticlesByAuthor } from "@/lib/queries";
 import ArticleCard from "@/components/articles/ArticleCard";
 import Breadcrumb from "@/components/shared/Breadcrumb";
+import DynamicSidebar from "@/components/shared/DynamicSidebar";
 import Image from "next/image";
 import { SITE_NAME, SITE_URL } from "@/lib/utils";
 
@@ -40,7 +41,7 @@ export default async function AuthorPage({ params }: PageProps) {
   const articles = await getArticlesByAuthor(author.id);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
+    <div className="max-w-255 mx-auto px-4 py-6">
       <Breadcrumb items={[{ label: "Auteurs", href: "#" }, { label: author.name }]} />
 
       {/* Profil auteur */}
@@ -92,12 +93,14 @@ export default async function AuthorPage({ params }: PageProps) {
       </div>
 
       {/* Articles de l'auteur */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="lg:col-span-2">
       <h2 className="text-sm font-sans font-bold uppercase tracking-wide text-gray-500 mb-4 border-b pb-2">
         Articles de {author.name} ({articles.length})
       </h2>
 
       {articles.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {articles.map((article) => (
             <ArticleCard key={article.id} article={article} />
           ))}
@@ -105,6 +108,12 @@ export default async function AuthorPage({ params }: PageProps) {
       ) : (
         <p className="text-gray-500 font-sans">Aucun article publié.</p>
       )}
+      </div>
+
+      <DynamicSidebar
+        excludeIds={articles.map((a) => a.id)}
+      />
+      </div>
     </div>
   );
 }

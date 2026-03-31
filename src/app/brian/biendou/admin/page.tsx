@@ -80,7 +80,7 @@ export default function AdminDashboardPage() {
     discovering: { label: "Découverte", color: "text-blue-600 bg-blue-50", icon: Globe },
     scraping: { label: "Scraping", color: "text-blue-600 bg-blue-50", icon: Loader2 },
     rewriting: { label: "Réécriture IA", color: "text-purple-600 bg-purple-50", icon: Zap },
-    publishing: { label: "Publication", color: "text-orange-600 bg-orange-50", icon: TrendingUp },
+    publishing: { label: "Publication", color: "text-red-600 bg-red-50", icon: TrendingUp },
     completed: { label: "Terminé", color: "text-green-600 bg-green-50", icon: CheckCircle2 },
     failed: { label: "Erreur", color: "text-red-600 bg-red-50", icon: AlertCircle },
   };
@@ -97,8 +97,8 @@ export default function AdminDashboardPage() {
         </div>
         <Link
           href="/brian/biendou/admin/workflow"
-          className="flex items-center gap-2 px-5 py-2.5 bg-[#E84D0E] text-white rounded-xl
-            font-medium text-sm hover:bg-[#C7400A] transition-colors shadow-sm"
+          className="flex items-center gap-2 px-5 py-2.5 bg-[#DC2626] text-white rounded-xl
+            font-medium text-sm hover:bg-[#B91C1C] transition-colors shadow-sm"
         >
           <Play size={16} />
           Nouveau workflow
@@ -112,8 +112,8 @@ export default function AdminDashboardPage() {
             label: "Workflows total",
             value: stats.total,
             icon: Zap,
-            color: "text-[#E84D0E]",
-            bg: "bg-[#E84D0E]/5",
+            color: "text-[#DC2626]",
+            bg: "bg-[#DC2626]/5",
           },
           {
             label: "En cours",
@@ -160,7 +160,7 @@ export default function AdminDashboardPage() {
           </h2>
           <Link
             href="/brian/biendou/admin/workflow"
-            className="text-sm text-[#E84D0E] hover:text-[#C7400A] font-medium flex items-center gap-1"
+            className="text-sm text-[#DC2626] hover:text-[#B91C1C] font-medium flex items-center gap-1"
           >
             Voir tout
             <ArrowRight size={14} />
@@ -183,8 +183,8 @@ export default function AdminDashboardPage() {
             </p>
             <Link
               href="/brian/biendou/admin/workflow"
-              className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-[#E84D0E] text-white
-                text-sm font-medium rounded-xl hover:bg-[#C7400A] transition-colors"
+              className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-[#DC2626] text-white
+                text-sm font-medium rounded-xl hover:bg-[#B91C1C] transition-colors"
             >
               <Play size={14} />
               Commencer

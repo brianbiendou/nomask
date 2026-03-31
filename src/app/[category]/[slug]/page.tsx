@@ -14,8 +14,8 @@ import Breadcrumb from "@/components/shared/Breadcrumb";
 import { JsonLdArticle, JsonLdBreadcrumb } from "@/components/shared/JsonLd";
 import ShareButtons from "@/components/shared/ShareButtons";
 import AuthorCard from "@/components/shared/AuthorCard";
-import ArticleCard from "@/components/articles/ArticleCard";
 import CommentSection from "@/components/comments/CommentSection";
+import DynamicSidebar from "@/components/shared/DynamicSidebar";
 
 export const revalidate = 300;
 
@@ -101,7 +101,7 @@ export default async function ArticlePage({ params }: PageProps) {
         ]}
       />
 
-      <article className="max-w-7xl mx-auto px-4 py-6">
+      <article className="max-w-255 mx-auto px-4 py-6">
         <Breadcrumb
           items={[
             {
@@ -227,23 +227,41 @@ export default async function ArticlePage({ params }: PageProps) {
 
           {/* Sidebar */}
           <aside className="space-y-8">
-            {/* Articles liés */}
+            {/* Articles liés — texte uniquement avec badge couleur */}
             {relatedArticles.length > 0 && (
               <div>
-                <h2 className="text-sm font-sans font-bold uppercase tracking-wide text-gray-500 mb-4 border-b pb-2">
+                <h2 className="text-sm font-sans font-bold uppercase tracking-wide text-gray-500 mb-3 border-b-2 border-brand pb-2">
                   À lire aussi
                 </h2>
-                <div className="space-y-4">
+                <div className="space-y-0">
                   {relatedArticles.map((related) => (
-                    <ArticleCard
+                    <Link
                       key={related.id}
-                      article={related}
-                      variant="compact"
-                    />
+                      href={`/${related.category?.slug}/${related.slug}`}
+                      className="block group py-1 border-b border-gray-100 last:border-0"
+                    >
+                      {related.category && (
+                        <span
+                          className="text-[10px] font-bold uppercase tracking-wider"
+                          style={{ color: related.category.color }}
+                        >
+                          {related.category.name}
+                        </span>
+                      )}
+                      <p className="text-sm font-semibold text-dark leading-snug mt-0 group-hover:text-brand transition-colors line-clamp-2">
+                        {related.title}
+                      </p>
+                    </Link>
                   ))}
                 </div>
               </div>
             )}
+
+            {/* Sidebar dynamique contextuelle */}
+            <DynamicSidebar
+              excludeIds={[article.id, ...relatedArticles.map((r) => r.id)]}
+              categorySlug={article.category?.slug}
+            />
           </aside>
         </div>
       </article>
