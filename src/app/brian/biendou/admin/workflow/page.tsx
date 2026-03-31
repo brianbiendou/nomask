@@ -72,13 +72,12 @@ interface Job {
 }
 
 /* ---------------------------------------------------------- */
-/* Sources préconfigurées                                     */
+/* Type source                                                */
 /* ---------------------------------------------------------- */
-const PRESET_SOURCES = [
-  { name: "Numerama", url: "https://www.numerama.com" },
-  { name: "Le Monde Tech", url: "https://www.lemonde.fr/pixels/" },
-  { name: "Le Figaro Tech", url: "https://www.lefigaro.fr/secteur/high-tech" },
-];
+interface SourceItem {
+  name: string;
+  url: string;
+}
 
 const PERSPECTIVES = [
   "analyse critique et tech-savvy",
@@ -117,9 +116,13 @@ function WorkflowContent() {
   const [allJobs, setAllJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // Sources dynamiques
+  const [sources, setSources] = useState<SourceItem[]>([]);
+  const [sourcesLoading, setSourcesLoading] = useState(true);
+
   // Form state
   const [mode, setMode] = useState<"discover" | "trending" | "urls">("discover");
-  const [sourceUrl, setSourceUrl] = useState(PRESET_SOURCES[0].url);
+  const [sourceUrl, setSourceUrl] = useState("");
   const [urlFields, setUrlFields] = useState<string[]>([""]);
   const [perspective, setPerspective] = useState(PERSPECTIVES[0]);
   const [maxArticles, setMaxArticles] = useState(5);
@@ -134,6 +137,23 @@ function WorkflowContent() {
   const [trendingLoading, setTrendingLoading] = useState(false);
   const [trendingError, setTrendingError] = useState<string | null>(null);
   const [selectedTrendingUrls, setSelectedTrendingUrls] = useState<Set<string>>(new Set());
+
+  /* Load sources from API */
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/admin/sources");
+        if (res.ok) {
+          const data = await res.json();
+          const active = (data.sources || []).filter((s: any) => s.enabled);
+          const items: SourceItem[] = active.map((s: any) => ({ name: s.name, url: s.url }));
+          setSources(items);
+          if (items.length > 0) setSourceUrl(items[0].url);
+        }
+      } catch { /* silent */ }
+      setSourcesLoading(false);
+    })();
+  }, []);
 
   /* Load jobs list */
   const fetchJobs = useCallback(async () => {
@@ -375,10 +395,17 @@ function WorkflowContent() {
                   onChange={(e) => setSourceUrl(e.target.value)}
                   className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm
                     focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626] outline-none mb-3"
+                  disabled={sourcesLoading}
                 >
-                  {PRESET_SOURCES.map((s) => (
-                    <option key={s.url} value={s.url}>{s.name}</option>
-                  ))}
+                  {sourcesLoading ? (
+                    <option>Chargement…</option>
+                  ) : sources.length === 0 ? (
+                    <option>Aucune source active</option>
+                  ) : (
+                    sources.map((s) => (
+                      <option key={s.url} value={s.url}>{s.name}</option>
+                    ))
+                  )}
                 </select>
 
                 {/* Hours & Max articles */}
@@ -424,10 +451,17 @@ function WorkflowContent() {
                   onChange={(e) => setSourceUrl(e.target.value)}
                   className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm
                     focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626] outline-none mb-3"
+                  disabled={sourcesLoading}
                 >
-                  {PRESET_SOURCES.map((s) => (
-                    <option key={s.url} value={s.url}>{s.name}</option>
-                  ))}
+                  {sourcesLoading ? (
+                    <option>Chargement…</option>
+                  ) : sources.length === 0 ? (
+                    <option>Aucune source active</option>
+                  ) : (
+                    sources.map((s) => (
+                      <option key={s.url} value={s.url}>{s.name}</option>
+                    ))
+                  )}
                 </select>
 
                 {/* Max articles */}
