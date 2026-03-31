@@ -34,6 +34,7 @@ app.add_middleware(
         "http://localhost:3000",
         "https://nomask.fr",
         "https://www.nomask.fr",
+        "https://www.nomask.fr",
     ],
     allow_credentials=True,
     allow_methods=["*"],

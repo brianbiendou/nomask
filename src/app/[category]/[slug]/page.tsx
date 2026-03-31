@@ -21,6 +21,30 @@ import DynamicSidebar from "@/components/shared/DynamicSidebar";
 
 export const revalidate = 300;
 
+/**
+ * Supprime du contenu HTML les <img> dont le src correspond à l'image principale,
+ * pour éviter les doublons avec le hero affiché au-dessus.
+ */
+function deduplicateImages(html: string, mainImageUrl: string | null): string {
+  if (!mainImageUrl || !html) return html;
+
+  // Extraire le nom de fichier de l'image principale pour une comparaison souple
+  const mainFilename = mainImageUrl.split("/").pop()?.split("?")[0]?.toLowerCase() || "";
+
+  // Supprimer les <img> (et leur <figure> parent éventuel) qui correspondent à l'image principale
+  return html
+    // Supprime les <figure> contenant l'image dupliquée
+    .replace(/<figure[^>]*>[\s\S]*?<img[^>]*src=["']([^"']+)["'][^>]*>[\s\S]*?<\/figure>/gi, (match, src) => {
+      const srcFilename = src.split("/").pop()?.split("?")[0]?.toLowerCase() || "";
+      return srcFilename === mainFilename ? "" : match;
+    })
+    // Supprime les <img> isolés qui correspondent
+    .replace(/<img[^>]*src=["']([^"']+)["'][^>]*\/?>/gi, (match, src) => {
+      const srcFilename = src.split("/").pop()?.split("?")[0]?.toLowerCase() || "";
+      return srcFilename === mainFilename ? "" : match;
+    });
+}
+
 interface PageProps {
   params: Promise<{ category: string; slug: string }>;
 }
@@ -206,7 +230,7 @@ export default async function ArticlePage({ params }: PageProps) {
             {/* Contenu de l'article */}
             <div
               className="article-content font-serif text-lg leading-relaxed text-gray-800"
-              dangerouslySetInnerHTML={{ __html: article.content }}
+              dangerouslySetInnerHTML={{ __html: deduplicateImages(article.content, article.image_url) }}
             />
 
             {/* Partage en bas */}

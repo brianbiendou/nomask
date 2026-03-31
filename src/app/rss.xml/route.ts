@@ -1,7 +1,7 @@
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import type { ArticleWithRelations } from "@/types";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://nomask.fr";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.nomask.fr";
 const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || "NoMask";
 
 export async function GET() {

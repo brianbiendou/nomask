@@ -63,7 +63,7 @@ export function getInitials(name: string): string {
 
 export const SITE_NAME = "NoMask";
 export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://nomask.fr";
+  process.env.NEXT_PUBLIC_SITE_URL || "https://www.nomask.fr";
 export const SITE_DESCRIPTION =
   "NoMask — L'actualité sans filtre. Politique, économie, tech, culture, sport et style. L'information vérifiée, sans masque.";
 

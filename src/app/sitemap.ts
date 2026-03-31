@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { getAllArticleSlugs, getCategories } from "@/lib/queries";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://nomask.fr";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.nomask.fr";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Pages statiques
