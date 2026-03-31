@@ -18,6 +18,8 @@ import {
   ExternalLink,
   Flame,
   TrendingUp,
+  Plus,
+  Trash2,
 } from "lucide-react";
 
 /* ---------------------------------------------------------- */
@@ -118,7 +120,7 @@ function WorkflowContent() {
   // Form state
   const [mode, setMode] = useState<"discover" | "trending" | "urls">("discover");
   const [sourceUrl, setSourceUrl] = useState(PRESET_SOURCES[0].url);
-  const [customUrls, setCustomUrls] = useState("");
+  const [urlFields, setUrlFields] = useState<string[]>([""]);
   const [perspective, setPerspective] = useState(PERSPECTIVES[0]);
   const [maxArticles, setMaxArticles] = useState(5);
   const [hours, setHours] = useState(24);
@@ -275,8 +277,7 @@ function WorkflowContent() {
         body.hours = hours;
         body.mode = "discover";
       } else {
-        body.urls = customUrls
-          .split("\n")
+        body.urls = urlFields
           .map((u) => u.trim())
           .filter(Boolean);
         body.mode = "manual";
@@ -470,16 +471,44 @@ function WorkflowContent() {
             ) : (
               <>
                 <label className="block text-xs font-medium text-gray-600 mb-1.5">
-                  URLs (une par ligne)
+                  URLs des articles
                 </label>
-                <textarea
-                  value={customUrls}
-                  onChange={(e) => setCustomUrls(e.target.value)}
-                  rows={5}
-                  placeholder="https://www.numerama.com/article-example..."
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm
-                    resize-none focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626] outline-none mb-3"
-                />
+                <div className="space-y-2 mb-3">
+                  {urlFields.map((url, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <input
+                        type="url"
+                        value={url}
+                        onChange={(e) => {
+                          const updated = [...urlFields];
+                          updated[idx] = e.target.value;
+                          setUrlFields(updated);
+                        }}
+                        placeholder={`https://www.example.com/article-${idx + 1}`}
+                        className="flex-1 rounded-xl border border-gray-200 px-3 py-2.5 text-sm
+                          focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626] outline-none"
+                      />
+                      {urlFields.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => setUrlFields(urlFields.filter((_, i) => i !== idx))}
+                          className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                          aria-label="Supprimer cette URL"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setUrlFields([...urlFields, ""])}
+                  className="flex items-center gap-1.5 text-xs font-medium text-[#DC2626] hover:text-[#B91C1C] transition-colors mb-3"
+                >
+                  <Plus size={14} />
+                  Ajouter une URL
+                </button>
               </>
             )}
 

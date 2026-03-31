@@ -19,5 +19,13 @@
     "url": "https://www.lefigaro.fr/secteur/high-tech",
     "enabled": true,
     "interval": 4
+  },
+  {
+    "id": "frandroid",
+    "name": "frandroid",
+    "url": "https://www.frandroid.com/",
+    "enabled": true,
+    "interval": 2,
+    "articlesFound": 0
   }
 ]

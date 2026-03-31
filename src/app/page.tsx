@@ -6,6 +6,7 @@ import {
   getArticlesBySubcategory,
 } from "@/lib/queries";
 import ArticleCard from "@/components/articles/ArticleCard";
+import HeroCarousel from "@/components/home/HeroCarousel";
 import Link from "next/link";
 import type { ArticleWithRelations } from "@/types";
 import { formatDateShort, formatDateWithTime } from "@/lib/utils";
@@ -31,52 +32,53 @@ export default async function HomePage() {
     getArticlesBySubcategory("tech", "guides-achat", "fr", 4),
   ]);
 
-  // Chronologique : hero = le + récent, sidebar = 3 suivants, etc.
-  const heroArticle = latestArticles[0];
-  const sidebarArticles = latestArticles.slice(1, 4);
+  // Chronologique : hero carousel = 6 premiers, sidebar = 4 suivants, etc.
+  const heroArticles = latestArticles.slice(0, 6);
+  const sidebarArticles = latestArticles.slice(6, 10);
 
   // "À lire absolument" = les 3 suivants
-  const mustReadArticles = latestArticles.slice(4, 7);
+  const mustReadArticles = latestArticles.slice(10, 13);
 
   // NoMask+ = les 3 suivants
-  const topIds = new Set(latestArticles.slice(0, 10).map((a) => a.id));
-  const plusArticles = latestArticles.slice(7, 10);
+  const topIds = new Set(latestArticles.slice(0, 16).map((a) => a.id));
+  const plusArticles = latestArticles.slice(13, 16);
 
   // Toute l'actualité = le reste (dédupliqué)
   const allNewsArticles = mostRecent.filter((a) => !topIds.has(a.id));
 
-  // Trending tags
+  // Trending : breaking news en priorité, sinon articles récents non affichés ailleurs
+  const heroAndSidebarIds = new Set([...heroArticles.map((a) => a.id), ...sidebarArticles.map((a) => a.id)]);
   const trendingTopics =
     breakingNews.length > 0
       ? breakingNews.map((a) => ({ title: a.title, url: `/${a.category?.slug}/${a.slug}` }))
-      : latestArticles.slice(0, 5).map((a) => ({ title: a.title, url: `/${a.category?.slug}/${a.slug}` }));
+      : mostRecent
+          .filter((a) => !heroAndSidebarIds.has(a.id))
+          .slice(0, 5)
+          .map((a) => ({ title: a.title, url: `/${a.category?.slug}/${a.slug}` }));
 
   return (
     <div className="min-h-screen">
       {/* ======= HERO SECTION ======= */}
       <section className="max-w-255 mx-auto px-4 pt-6 pb-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Article principal (gauche - 2 colonnes) */}
+          {/* Article principal (gauche - 2 colonnes) — Carousel */}
           <div className="lg:col-span-2">
-            {heroArticle && <ArticleCard article={heroArticle} variant="hero" />}
+            <HeroCarousel articles={heroArticles} />
           </div>
 
-          {/* Sidebar droite (1 colonne) : articles + pub */}
+          {/* Sidebar droite (1 colonne) : 4 articles */}
           <div className="flex flex-col gap-4">
             {sidebarArticles.map((article) => (
               <ArticleCard key={article.id} article={article} variant="sidebar" />
             ))}
-            {/* Placeholder publicité (droite) */}
-            <div className="border-2 border-red-500 rounded-lg flex items-center justify-center h-48 mt-2">
-              <span className="text-red-400 text-sm font-medium">Espace publicitaire</span>
-            </div>
           </div>
         </div>
 
-        {/* Placeholder publicité (en dessous du hero) */}
+        {/* Publicité masquée pour le moment
         <div className="border-2 border-red-500 rounded-lg flex items-center justify-center h-32 mt-8 max-w-2xl mx-auto">
           <span className="text-red-400 text-sm font-medium">Espace publicitaire</span>
         </div>
+        */}
       </section>
 
       {/* ======= TRENDING BAR ======= */}
@@ -94,7 +96,10 @@ export default async function HomePage() {
                 href={topic.url}
                 className="shrink-0 text-sm font-semibold text-brand hover:text-brand-dark transition-colors flex items-center gap-2"
               >
-                <span className="text-brand text-lg leading-none">&bull;</span>
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-brand" />
+                </span>
                 {topic.title.length > 45 ? topic.title.slice(0, 45) + "\u2026" : topic.title}
               </Link>
             ))}

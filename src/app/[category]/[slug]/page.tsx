@@ -7,8 +7,10 @@ import {
   getRelatedArticles,
   getCommentsByArticle,
   getAllArticleSlugs,
+  getArticlesByCategory,
+  getMostRecentArticles,
 } from "@/lib/queries";
-import { formatDate, timeAgo, SITE_NAME, SITE_URL } from "@/lib/utils";
+import { formatDate, timeAgo, formatDateWithTime, SITE_NAME, SITE_URL } from "@/lib/utils";
 import CategoryBadge from "@/components/shared/CategoryBadge";
 import Breadcrumb from "@/components/shared/Breadcrumb";
 import { JsonLdArticle, JsonLdBreadcrumb } from "@/components/shared/JsonLd";
@@ -84,10 +86,18 @@ export default async function ArticlePage({ params }: PageProps) {
     notFound();
   }
 
-  const [relatedArticles, comments] = await Promise.all([
+  const [relatedArticles, comments, categoryArticles, latestArticles] = await Promise.all([
     getRelatedArticles(article.id, article.category_id, "fr", 3),
     getCommentsByArticle(article.id),
+    getArticlesByCategory(categorySlug, "fr", 12),
+    getMostRecentArticles("fr", 12),
   ]);
+
+  // Exclure l'article actuel des listes
+  const moreCategoryArticles = categoryArticles.filter((a) => a.id !== article.id).slice(0, 10);
+  const moreLatestArticles = latestArticles.filter(
+    (a) => a.id !== article.id && !moreCategoryArticles.some((c) => c.id === a.id)
+  ).slice(0, 10);
 
   const articleUrl = `/${article.category?.slug}/${article.slug}`;
 
@@ -176,7 +186,7 @@ export default async function ArticlePage({ params }: PageProps) {
 
             {/* Image principale */}
             {article.image_url && (
-              <figure className="mb-8">
+              <figure className="mb-8 relative img-watermark">
                 <Image
                   src={article.image_url}
                   alt={article.image_caption || article.title}
@@ -265,6 +275,94 @@ export default async function ArticlePage({ params }: PageProps) {
           </aside>
         </div>
       </article>
+
+      {/* ======= SECTIONS ARTICLES LIÉS (sous l'article, pleine largeur) ======= */}
+      <div className="max-w-255 mx-auto px-4 pb-12">
+        {/* Section catégorie */}
+        {moreCategoryArticles.length > 0 && (
+          <section className="mt-8 pt-8 border-t border-gray-200">
+            <h2 className="text-2xl font-black text-dark mb-6">
+              Les derniers articles{" "}
+              <span style={{ color: article.category?.color || "var(--color-brand)" }}>
+                {article.category?.name}
+              </span>
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-0">
+              {moreCategoryArticles.map((a) => (
+                <Link
+                  key={a.id}
+                  href={`/${a.category?.slug}/${a.slug}`}
+                  className="flex gap-4 group py-4 border-b border-gray-100"
+                >
+                  {a.image_url && (
+                    <div className="w-[130px] h-[90px] flex-shrink-0 overflow-hidden bg-gray-100 rounded">
+                      <img
+                        src={a.image_url}
+                        alt={a.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] text-gray-400 font-medium mb-1">
+                      {a.category?.name}
+                    </p>
+                    <h3 className="text-[15px] font-bold text-gray-900 leading-snug line-clamp-3 group-hover:text-brand transition-colors">
+                      {a.title}
+                    </h3>
+                    {a.published_at && (
+                      <p className="text-[11px] text-gray-400 mt-1.5">
+                        {formatDateWithTime(a.published_at)}
+                      </p>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Section dernières actus globales */}
+        {moreLatestArticles.length > 0 && (
+          <section className="mt-8 pt-8 border-t border-gray-200">
+            <h2 className="text-2xl font-black text-dark mb-6">
+              Les dernières actualités
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-0">
+              {moreLatestArticles.map((a) => (
+                <Link
+                  key={a.id}
+                  href={`/${a.category?.slug}/${a.slug}`}
+                  className="flex gap-4 group py-4 border-b border-gray-100"
+                >
+                  {a.image_url && (
+                    <div className="w-[130px] h-[90px] flex-shrink-0 overflow-hidden bg-gray-100 rounded">
+                      <img
+                        src={a.image_url}
+                        alt={a.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] text-gray-400 font-medium mb-1">
+                      {a.category?.name}
+                    </p>
+                    <h3 className="text-[15px] font-bold text-gray-900 leading-snug line-clamp-3 group-hover:text-brand transition-colors">
+                      {a.title}
+                    </h3>
+                    {a.published_at && (
+                      <p className="text-[11px] text-gray-400 mt-1.5">
+                        {formatDateWithTime(a.published_at)}
+                      </p>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
     </>
   );
 }

@@ -56,9 +56,11 @@ export default function Header() {
         setIsScrolled(false);
       }
     };
+    // Sync with actual scroll position on mount/navigation
+    handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [isAdmin]);
+  }, [isAdmin, pathname]);
 
   return (
     <header className="sticky top-0 z-50 bg-white shadow-sm overflow-visible">

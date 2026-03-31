@@ -62,6 +62,10 @@ RÈGLES STRICTES :
 - Commence directement par le contenu HTML, PAS de ```html ni de commentaires
 - N'invente AUCUNE information
 - Utilise un français impeccable, riche et varié
+- SUPPRIME TOUTE mention d'un autre média ou journal (Numerama, Le Monde, Frandroid, Les Échos, Le Figaro, BFM, TF1, 01net, Clubic, etc.)
+- SUPPRIME tout texte promotionnel du site source (ex: "Installer Numerama", "Découvrez notre comparateur", "Retrouvez-nous sur…", liens vers d'autres médias)
+- Si l'article cite un autre média comme source, remplace par "selon nos informations" ou "d'après les dernières informations disponibles"
+- Le seul site mentionné doit être NoMask
 - Point de vue : {perspective}"""
 
 SYSTEM_REWRITE_TITLE = """Tu es un rédacteur de titres d'articles expert en français. Tu dois réécrire le titre donné.

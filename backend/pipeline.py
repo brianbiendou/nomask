@@ -3,7 +3,7 @@ import asyncio
 from datetime import datetime, timezone, timedelta
 
 from scraper import ScrapedArticle, scrape_batch
-from image_handler import process_images, replace_image_urls, ensure_bucket_exists
+from image_handler import process_images, replace_image_urls, ensure_bucket_exists, extract_content_images, inject_images_into_content
 from rewriter import rewrite_content, rewrite_title, rewrite_excerpt, generate_slug
 from publisher import (
     get_categories,
@@ -83,7 +83,14 @@ async def process_single_article(
     print(f"  [IA] Réécriture de l'extrait...")
     new_excerpt = rewrite_excerpt(scraped.excerpt, perspective)
     print(f"  [IA] Réécriture du contenu (peut prendre ~1min)...")
+    # Extraire les images du contenu original AVANT la réécriture
+    original_image_blocks = extract_content_images(scraped.content_html)
+    print(f"  {len(original_image_blocks)} images trouvées dans le contenu original")
     new_content = rewrite_content(scraped.content_html, scraped.content_text, perspective)
+    # Réinjecter les images originales dans le contenu réécrit
+    if original_image_blocks:
+        new_content = inject_images_into_content(new_content, original_image_blocks)
+        print(f"  Images réinjectées dans le contenu réécrit")
     print(f"  Nouveau titre: {new_title[:70]}...")
 
     # 3. Traiter les images en parallèle

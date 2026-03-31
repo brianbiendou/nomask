@@ -243,7 +243,7 @@ export async function getCommentsByArticle(articleId: string) {
 export async function getAllArticleSlugs(locale: string = "fr") {
   const { data, error } = await supabase
     .from("articles")
-    .select("slug, category:categories(slug)")
+    .select("slug, published_at, updated_at, category:categories(slug)")
     .eq("status", "published")
     .eq("locale", locale);
 

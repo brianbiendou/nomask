@@ -47,6 +47,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .filter((a: any) => a.category?.slug)
     .map((a: any) => ({
       url: `${SITE_URL}/${a.category.slug}/${a.slug}`,
+      lastModified: a.updated_at ? new Date(a.updated_at) : a.published_at ? new Date(a.published_at) : undefined,
       changeFrequency: "weekly" as const,
       priority: 0.7,
     }));
