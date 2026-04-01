@@ -811,7 +811,7 @@ async def _yt_refresh_loop():
     last_refresh_hour: int | None = None
 
     while True:
-        await asyncio.sleep(60)  # Check chaque minute
+        await asyncio.sleep(300)  # Check toutes les 5 min
         try:
             cfg_res = _yt_supabase.table("youtube_config").select("*").eq("id", 1).execute()
             cfg = cfg_res.data[0] if cfg_res.data else {}

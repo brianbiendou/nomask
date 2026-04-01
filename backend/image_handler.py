@@ -187,6 +187,7 @@ async def process_images(
             data, ct = result
             storage_path = _make_storage_path(url, article_slug)
             # L'upload Supabase est synchrone, on le fait en executor
+            loop = asyncio.get_event_loop()
             public_url = await loop.run_in_executor(
                 None, upload_to_supabase, data, storage_path, ct
             )
