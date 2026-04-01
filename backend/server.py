@@ -9,12 +9,20 @@ via des endpoints HTTP pour le frontend Next.js.
 import asyncio
 import sys
 import uuid
+import logging
 from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+
+# Configure logging pour voir les logs async
+logging.basicConfig(
+    level=logging.INFO,
+    format="[%(asctime)s] %(levelname)s: %(message)s"
+)
+logger = logging.getLogger("nomask")
 
 # Fix Windows asyncio
 if sys.platform == "win32":
@@ -34,7 +42,7 @@ app.add_middleware(
         "http://localhost:3000",
         "https://nomask.fr",
         "https://www.nomask.fr",
-        "https://www.nomask.fr",
+        "https://api.nomask.fr",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -160,13 +168,17 @@ async def _run_pipeline_job(
     if not job:
         return
 
+    logger.info(f"[JOB {job_id}] Démarrage du pipeline pour {len(urls)} articles")
+
     try:
         # Step 1 — Scraping
+        logger.info(f"[JOB {job_id}] Step 1: Scraping...")
         job["status"] = "scraping"
         job["steps"][1]["status"] = "running"
         job["steps"][1]["startedAt"] = datetime.now(timezone.utc).isoformat()
 
         scraped = await scrape_batch(urls)
+        logger.info(f"[JOB {job_id}] ✓ {len(scraped)} articles scrappés")
         job["steps"][1]["status"] = "completed"
         job["steps"][1]["completedAt"] = datetime.now(timezone.utc).isoformat()
         job["steps"][1]["detail"] = f"{len(scraped)} articles scrappés"
@@ -182,11 +194,13 @@ async def _run_pipeline_job(
             })
 
         # Step 2-4 — Pipeline complet (rewrite + images + publish)
+        logger.info(f"[JOB {job_id}] Step 2-4: Réécriture IA + Images + Publication...")
         job["status"] = "rewriting"
         job["steps"][2]["status"] = "running"
         job["steps"][2]["startedAt"] = datetime.now(timezone.utc).isoformat()
 
         results = await run_pipeline(urls, perspective=perspective, force=force)
+        logger.info(f"[JOB {job_id}] ✓ Pipeline complété: {len(results)} résultats")
 
         job["steps"][2]["status"] = "completed"
         job["steps"][2]["completedAt"] = datetime.now(timezone.utc).isoformat()
@@ -202,17 +216,22 @@ async def _run_pipeline_job(
                 job["articles"][i]["newTitle"] = res.get("title", "")
                 job["articles"][i]["status"] = "published"
                 published_count += 1
+                logger.debug(f"[JOB {job_id}] Article {i+1}: {res.get('title', 'N/A')[:60]}...")
 
         # Mark non-published articles
         for art in job["articles"]:
             if art["status"] == "processing":
                 art["status"] = "skipped"
+                logger.warning(f"[JOB {job_id}] Article skippé: {art['title'][:60]}...")
 
         job["steps"][4]["detail"] = f"{published_count}/{len(urls)} publiés"
         job["status"] = "completed"
+        logger.info(f"[JOB {job_id}] ✓ COMPLÉTÉ: {published_count}/{len(urls)} publiés")
+
         job["completedAt"] = datetime.now(timezone.utc).isoformat()
 
     except Exception as e:
+        logger.error(f"[JOB {job_id}] ✗ ERREUR: {type(e).__name__}: {str(e)}", exc_info=True)
         job["status"] = "failed"
         job["error"] = str(e)
         job["completedAt"] = datetime.now(timezone.utc).isoformat()

@@ -32,14 +32,19 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "2.0"        # 2 cœurs max pour le scraping/rewriting
-          memory: 1G         # Le backend Python est léger (~200 MB réel)
+          cpus: "4.0"        # 4 cœurs — scraping + réécriture IA en parallèle
+          memory: 2G         # Marge pour les gros batch (images + HTML)
         reservations:
-          cpus: "0.5"
-          memory: 256M
+          cpus: "1.0"
+          memory: 512M
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
