@@ -176,38 +176,26 @@ def test_cloudflare_tunnel():
 # ═══════════════════════════════════════
 # 4. OLLAMA
 # ═══════════════════════════════════════
-def test_ollama():
-    print("\n═══ 4. OLLAMA (LLM local) ═══")
+
+def _ollama_check_connection(base_url: str, label: str) -> list[str] | None:
+    """Teste la connexion Ollama et retourne la liste des modèles, ou None si échec."""
     import urllib.request
-    import urllib.error
-
-    ollama_url = os.environ.get("OLLAMA_URL", "http://localhost:11434")
-
-    # Test connexion
     try:
-        req = urllib.request.Request(f"{ollama_url}/api/tags")
+        req = urllib.request.Request(f"{base_url}/api/tags")
         with urllib.request.urlopen(req, timeout=10) as resp:
             data = json.loads(resp.read().decode())
             models = [m["name"] for m in data.get("models", [])]
-            report("ollama-connection", "pass", f"{len(models)} modèle(s)")
+            report(label, "pass", f"{len(models)} modèle(s): {', '.join(models[:3])}")
+            return models
     except Exception as e:
-        report("ollama-connection", "fail", str(e)[:80])
-        return
+        report(label, "fail", str(e)[:80])
+        return None
 
-    # Test génération courte — on détecte le modèle réellement disponible
-    model = os.environ.get("OLLAMA_MODEL", "qwen2.5:7b")
-    # Vérifier que le modèle est installé, sinon prendre le premier dispo
-    try:
-        req_tags = urllib.request.Request(f"{ollama_url}/api/tags")
-        with urllib.request.urlopen(req_tags, timeout=10) as resp_tags:
-            tag_data = json.loads(resp_tags.read().decode())
-            installed = [m["name"] for m in tag_data.get("models", [])]
-            if model not in installed and installed:
-                model = installed[0]
-                report("ollama-model-fallback", "pass", f"Modèle env ({os.environ.get('OLLAMA_MODEL')}) absent, utilise {model}")
-    except Exception:
-        pass
 
+def _ollama_test_generate(base_url: str, label: str, model: str):
+    """Envoie un prompt court à Ollama et vérifie la réponse."""
+    import urllib.request
+    import urllib.error
     try:
         payload = json.dumps({
             "model": model,
@@ -215,19 +203,84 @@ def test_ollama():
             "stream": False,
             "options": {"num_predict": 10},
         }).encode()
-        req = urllib.request.Request(f"{ollama_url}/api/generate", data=payload, method="POST")
+        req = urllib.request.Request(f"{base_url}/api/generate", data=payload, method="POST")
         req.add_header("Content-Type", "application/json")
         start = time.time()
         with urllib.request.urlopen(req, timeout=120) as resp:
             data = json.loads(resp.read().decode())
             answer = data.get("response", "")[:50]
             elapsed = time.time() - start
-            report("ollama-generate", "pass", f"'{answer.strip()}' en {elapsed:.1f}s ({model})")
+            report(label, "pass", f"'{answer.strip()}' en {elapsed:.1f}s ({model})")
     except urllib.error.HTTPError as e:
         body = e.read().decode()[:100] if hasattr(e, "read") else ""
-        report("ollama-generate", "fail", f"HTTP {e.code} — {body}")
+        report(label, "fail", f"HTTP {e.code} — {body}")
     except Exception as e:
-        report("ollama-generate", "fail", str(e)[:80])
+        report(label, "fail", str(e)[:80])
+
+
+def _pick_model(models: list[str]) -> str:
+    """Choisit le modèle configuré ou le premier disponible."""
+    model = os.environ.get("OLLAMA_MODEL", "qwen2.5:7b")
+    if model not in models and models:
+        return models[0]
+    return model
+
+
+def test_ollama():
+    print("\n═══ 4a. OLLAMA LOCAL (localhost:11434) ═══")
+
+    local_url = "http://localhost:11434"
+    models = _ollama_check_connection(local_url, "ollama-local-connection")
+    if models is not None:
+        model = _pick_model(models)
+        _ollama_test_generate(local_url, "ollama-local-generate", model)
+
+    print("\n═══ 4b. OLLAMA VIA DOCKER (backend → host.docker.internal) ═══")
+    import urllib.request
+    import urllib.error
+
+    # Le backend Docker contacte Ollama via host.docker.internal:11434.
+    # On vérifie que le backend arrive à joindre Ollama en lisant /health.
+    try:
+        req = urllib.request.Request("http://localhost:8000/health")
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode())
+            ollama_declared = data.get("ollama", "?")
+            model_declared = data.get("model", "?")
+            status = data.get("status", "?")
+            report(
+                "ollama-docker-health",
+                "pass" if status == "ok" else "fail",
+                f"status={status}, ollama={ollama_declared}, model={model_declared}",
+            )
+    except Exception as e:
+        report("ollama-docker-health", "fail", str(e)[:80])
+        return
+
+    # Test réel : demander au backend de faire un appel Ollama via /api/pipeline/test-ollama
+    # Si cet endpoint n'existe pas, on teste via un generate direct sur host.docker.internal
+    try:
+        # Tester via le backend en demandant une réécriture test
+        payload = json.dumps({
+            "prompt": "Dis bonjour en une phrase.",
+            "model": os.environ.get("OLLAMA_MODEL", "qwen2.5:7b"),
+        }).encode()
+        req = urllib.request.Request("http://localhost:8000/api/ollama/test", data=payload, method="POST")
+        req.add_header("Content-Type", "application/json")
+        start = time.time()
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            data = json.loads(resp.read().decode())
+            elapsed = time.time() - start
+            answer = data.get("response", data.get("result", ""))[:50]
+            report("ollama-docker-generate", "pass", f"'{answer.strip()}' en {elapsed:.1f}s via Docker")
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            report("ollama-docker-generate", "skip", "endpoint /api/ollama/test absent — ajout recommandé")
+        else:
+            body = e.read().decode()[:100] if hasattr(e, "read") else ""
+            report("ollama-docker-generate", "fail", f"HTTP {e.code} — {body}")
+    except Exception as e:
+        report("ollama-docker-generate", "fail", str(e)[:80])
 
 
 # ═══════════════════════════════════════

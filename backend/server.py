@@ -320,6 +320,40 @@ async def health():
     return {"status": "ok", "model": OLLAMA_MODEL, "ollama": OLLAMA_BASE_URL}
 
 
+class OllamaTestRequest(BaseModel):
+    prompt: str = "Dis bonjour en une phrase."
+    model: str | None = None
+
+
+@app.post("/api/ollama/test")
+async def ollama_test(req: OllamaTestRequest):
+    """Test direct Ollama depuis le conteneur Docker."""
+    import aiohttp
+    model = req.model or OLLAMA_MODEL
+    url = f"{OLLAMA_BASE_URL}/api/generate"
+    payload = {
+        "model": model,
+        "prompt": req.prompt,
+        "stream": False,
+        "options": {"num_predict": 20},
+    }
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=OLLAMA_TIMEOUT)) as resp:
+                if resp.status != 200:
+                    body = await resp.text()
+                    raise HTTPException(status_code=resp.status, detail=body[:200])
+                data = await resp.json()
+                return {
+                    "success": True,
+                    "model": model,
+                    "response": data.get("response", ""),
+                    "ollama_url": OLLAMA_BASE_URL,
+                }
+    except aiohttp.ClientConnectorError:
+        raise HTTPException(status_code=503, detail=f"Ollama injoignable à {OLLAMA_BASE_URL}")
+
+
 @app.post("/api/discover")
 async def discover(req: DiscoverRequest):
     """Découvrir les articles récents d'un site."""

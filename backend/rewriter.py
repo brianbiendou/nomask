@@ -10,7 +10,7 @@ Le point de vue (perspective) est injecté dans le prompt système.
 import json
 import re
 
-import requests
+import aiohttp
 from slugify import slugify
 from bs4 import BeautifulSoup
 
@@ -22,28 +22,30 @@ from config import (
 )
 
 
-def _call_ollama(system_prompt: str, user_prompt: str, temperature: float = 0.7) -> tuple[str, bool]:
-    """Appelle Ollama et retourne (réponse texte, True si Ollama a répondu)."""
+async def _call_ollama(system_prompt: str, user_prompt: str, temperature: float = 0.7) -> tuple[str, bool]:
+    """Appelle Ollama de façon async et retourne (réponse texte, True si Ollama a répondu)."""
     try:
-        resp = requests.post(
-            f"{OLLAMA_BASE_URL}/api/generate",
-            json={
-                "model": OLLAMA_MODEL,
-                "system": system_prompt,
-                "prompt": user_prompt,
-                "stream": False,
-                "options": {
-                    "temperature": temperature,
-                    "num_predict": 4096,
-                    "top_p": 0.9,
+        timeout = aiohttp.ClientTimeout(total=OLLAMA_TIMEOUT)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.post(
+                f"{OLLAMA_BASE_URL}/api/generate",
+                json={
+                    "model": OLLAMA_MODEL,
+                    "system": system_prompt,
+                    "prompt": user_prompt,
+                    "stream": False,
+                    "options": {
+                        "temperature": temperature,
+                        "num_predict": 4096,
+                        "top_p": 0.9,
+                    },
                 },
-            },
-            timeout=OLLAMA_TIMEOUT,
-        )
-        resp.raise_for_status()
-        text = resp.json().get("response", "").strip()
-        return (text, True) if text else ("", False)
-    except requests.exceptions.ConnectionError:
+            ) as resp:
+                resp.raise_for_status()
+                data = await resp.json()
+                text = data.get("response", "").strip()
+                return (text, True) if text else ("", False)
+    except (aiohttp.ClientConnectorError, aiohttp.ClientConnectionError):
         print("  [WARN] Ollama non disponible, réécriture structurelle utilisée.")
         return "", False
     except Exception as e:
@@ -127,12 +129,12 @@ Réécris cet article INTÉGRALEMENT en HTML (h2, h3, p, strong, em). Garde tout
     return result, True
 
 
-def rewrite_title(title: str, perspective: str = DEFAULT_PERSPECTIVE) -> tuple[str, bool]:
+async def rewrite_title(title: str, perspective: str = DEFAULT_PERSPECTIVE) -> tuple[str, bool]:
     """Réécrit le titre via Ollama. Retourne (titre, used_ollama)."""
     system = SYSTEM_REWRITE_TITLE.format(perspective=perspective)
     user_prompt = f"Titre original : {title}"
 
-    result, used_ollama = _call_ollama(system, user_prompt, temperature=0.8)
+    result, used_ollama = await _call_ollama(system, user_prompt, temperature=0.8)
 
     if not result:
         return title, False
@@ -146,12 +148,12 @@ def rewrite_title(title: str, perspective: str = DEFAULT_PERSPECTIVE) -> tuple[s
     return result, True
 
 
-def rewrite_excerpt(excerpt: str, perspective: str = DEFAULT_PERSPECTIVE) -> tuple[str, bool]:
+async def rewrite_excerpt(excerpt: str, perspective: str = DEFAULT_PERSPECTIVE) -> tuple[str, bool]:
     """Réécrit l'extrait via Ollama. Retourne (extrait, used_ollama)."""
     system = SYSTEM_REWRITE_EXCERPT.format(perspective=perspective)
     user_prompt = f"Chapô original : {excerpt}"
 
-    result, used_ollama = _call_ollama(system, user_prompt, temperature=0.7)
+    result, used_ollama = await _call_ollama(system, user_prompt, temperature=0.7)
 
     if not result:
         return excerpt, False
@@ -196,7 +198,7 @@ RÈGLES :
 - Un article sur SpaceX / fusée = science (espace)"""
 
 
-def classify_article(title: str, excerpt: str, content_text: str = "") -> tuple[str, bool]:
+async def classify_article(title: str, excerpt: str, content_text: str = "") -> tuple[str, bool]:
     """Classifie un article via Ollama. Retourne (slug_catégorie, used_ollama).
 
     Le content_text peut être tronqué pour limiter le contexte.
@@ -211,7 +213,7 @@ Début du contenu : {content_text[:500]}
 
 Catégorie (un seul mot) :"""
 
-    result, used_ollama = _call_ollama(SYSTEM_CLASSIFY, user_prompt, temperature=0.1)
+    result, used_ollama = await _call_ollama(SYSTEM_CLASSIFY, user_prompt, temperature=0.1)
 
     if not result:
         return "", False

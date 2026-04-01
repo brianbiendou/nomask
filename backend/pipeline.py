@@ -131,7 +131,7 @@ async def process_single_article(
     else:
         # Classification IA via Ollama
         print(f"  [IA] Classification de l'article...")
-        ai_cat, ai_used = classify_article(scraped.title, scraped.excerpt, scraped.content_text)
+        ai_cat, ai_used = await classify_article(scraped.title, scraped.excerpt, scraped.content_text)
         if ai_used and ai_cat in categories:
             cat_slug = ai_cat
             category_id = categories[cat_slug]
@@ -141,45 +141,50 @@ async def process_single_article(
             category_id = categories[cat_slug]
             print(f"  Catégorie (fallback): {cat_slug}")
 
-    # 2. Réécrire titre et contenu via Ollama
-    print(f"  [IA] Réécriture du titre...")
-    new_title, title_ollama = rewrite_title(scraped.title, perspective)
+    # 2. Réécrire titre et extrait en parallèle via Ollama
+    print(f"  [IA] Réécriture du titre + extrait...")
+    (new_title, title_ollama), (new_excerpt, excerpt_ollama) = await asyncio.gather(
+        rewrite_title(scraped.title, perspective),
+        rewrite_excerpt(scraped.excerpt, perspective),
+    )
     new_slug = generate_slug(new_title)
 
+    loop = asyncio.get_event_loop()
+
     # Vérifier si existe déjà
-    if article_exists(new_slug):
+    exists = await loop.run_in_executor(None, article_exists, new_slug)
+    if exists:
         if force:
             print(f"  [FORCE] Suppression de l'ancien article: {new_slug}")
-            delete_article_by_slug(new_slug)
+            await loop.run_in_executor(None, delete_article_by_slug, new_slug)
         else:
             print(f"  [SKIP] Article déjà publié: {new_slug}")
             return None
 
-    print(f"  [IA] Réécriture de l'extrait...")
-    new_excerpt, excerpt_ollama = rewrite_excerpt(scraped.excerpt, perspective)
-    print(f"  [IA] Réécriture du contenu (peut prendre ~1min)...")
-    # Extraire les images du contenu original AVANT la réécriture
+    # 3. Réécrire contenu + traiter images EN PARALLÈLE
+    print(f"  [IA] Réécriture du contenu + images en parallèle...")
     original_image_blocks = extract_content_images(scraped.content_html)
     print(f"  {len(original_image_blocks)} images trouvées dans le contenu original")
-    new_content, content_ollama = rewrite_content(scraped.content_html, scraped.content_text, perspective)
+
+    content_task = rewrite_content(scraped.content_html, scraped.content_text, perspective)
+    images_task = process_images(scraped.image_urls, new_slug)
+
+    (new_content, content_ollama), url_map = await asyncio.gather(content_task, images_task)
+
     # Réinjecter les images originales dans le contenu réécrit
     if original_image_blocks:
         new_content = inject_images_into_content(new_content, original_image_blocks)
         print(f"  Images réinjectées dans le contenu réécrit")
     print(f"  Nouveau titre: {new_title[:70]}...")
+    print(f"  {len(url_map)} images uploadées sur Supabase Storage")
 
-    # 2b. Re-classification IA si la catégorie venait du fallback URL
+    # 3b. Re-classification IA si la catégorie venait du fallback URL
     if not CATEGORY_MAP.get(scraped.category_hint or "", ""):
-        ai_cat2, ai_used2 = classify_article(new_title, new_excerpt, scraped.content_text)
+        ai_cat2, ai_used2 = await classify_article(new_title, new_excerpt, scraped.content_text)
         if ai_used2 and ai_cat2 in categories and ai_cat2 != cat_slug:
             cat_slug = ai_cat2
             category_id = categories[cat_slug]
             print(f"  Catégorie corrigée (IA post-réécriture): {cat_slug}")
-
-    # 3. Traiter les images en parallèle
-    print(f"  Traitement de {len(scraped.image_urls)} images...")
-    url_map = await process_images(scraped.image_urls, new_slug)
-    print(f"  {len(url_map)} images uploadées sur Supabase Storage")
 
     # 4. Remplacer les URLs d'images dans le contenu
     new_content = replace_image_urls(new_content, url_map)
@@ -217,7 +222,7 @@ async def process_single_article(
     pub_date = datetime.now(timezone.utc) - timedelta(hours=publish_offset_hours)
 
     # 9. Publier !
-    result = publish_article(
+    result = await loop.run_in_executor(None, lambda: publish_article(
         title=new_title,
         slug=new_slug,
         excerpt=new_excerpt,
@@ -233,7 +238,7 @@ async def process_single_article(
         seo_keywords=scraped.tags[:5] if scraped.tags else None,
         read_time=read_time,
         published_at=pub_date.isoformat(),
-    )
+    ))
 
     if result is None:
         return None
@@ -271,13 +276,16 @@ async def run_pipeline(
     print(f"{'#'*60}")
 
     # S'assurer que le bucket existe
-    ensure_bucket_exists()
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, ensure_bucket_exists)
 
-    # Charger les référentiels Supabase
+    # Charger les référentiels Supabase EN PARALLÈLE
     print("\n[INIT] Chargement des catégories et auteurs...")
-    categories = get_categories()
-    authors = get_authors()
-    subcategories = get_subcategories()
+    categories, authors, subcategories = await asyncio.gather(
+        loop.run_in_executor(None, get_categories),
+        loop.run_in_executor(None, get_authors),
+        loop.run_in_executor(None, get_subcategories),
+    )
     print(f"  {len(categories)} catégories, {len(authors)} auteurs, {len(subcategories)} sous-catégories")
 
     # Étape 1 : Scraping parallèle
@@ -285,23 +293,31 @@ async def run_pipeline(
     scraped_articles = await scrape_batch(urls, max_concurrent=MAX_CONCURRENT_SCRAPES)
     print(f"  {len(scraped_articles)} articles scrappés avec succès")
 
-    # Étape 2 : Traitement séquentiel pour respecter l'ordre de publication
-    # L'article en position 0 = le plus récent (published_at NOW)
-    # L'article en position N = le plus ancien (published_at NOW - N*0.5h)
+    # Étape 2 : Traitement parallèle des articles (semaphore pour limiter la charge)
+    # Ollama traite 1 requête à la fois, mais les I/O images/Supabase se chevauchent
+    sem = asyncio.Semaphore(2)
+
+    async def _process_with_sem(i: int, scraped: ScrapedArticle):
+        async with sem:
+            offset = i * 0.5
+            return await process_single_article(
+                scraped=scraped,
+                categories=categories,
+                authors=authors,
+                subcategories=subcategories,
+                perspective=perspective,
+                publish_offset_hours=offset,
+                force=force,
+            )
+
+    tasks = [_process_with_sem(i, s) for i, s in enumerate(scraped_articles)]
+    raw_results = await asyncio.gather(*tasks, return_exceptions=True)
     results = []
-    for i, scraped in enumerate(scraped_articles):
-        offset = i * 0.5  # 30 min d'écart entre chaque article
-        result = await process_single_article(
-            scraped=scraped,
-            categories=categories,
-            authors=authors,
-            subcategories=subcategories,
-            perspective=perspective,
-            publish_offset_hours=offset,
-            force=force,
-        )
-        if result:
-            results.append(result)
+    for r in raw_results:
+        if isinstance(r, Exception):
+            print(f"  [ERREUR] Article échoué: {r}")
+        elif r:
+            results.append(r)
 
     print(f"\n{'#'*60}")
     print(f"# TERMINÉ — {len(results)}/{len(urls)} articles publiés")
