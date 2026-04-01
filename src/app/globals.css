@@ -132,9 +132,9 @@
   }
   /* Watermark plus gros pour le carousel hero */
   .img-watermark-lg::after {
-    width: 140px;
-    height: 90px;
+    width: 98px;
+    height: 63px;
     top: 12px;
-    right: 12px;
+    right: 10px;
   }
 }

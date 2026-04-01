@@ -185,9 +185,6 @@ async def process_images(
             if result is None:
                 return
             data, ct = result
-            # Appliquer le watermark NM
-            loop = asyncio.get_event_loop()
-            data = await loop.run_in_executor(None, apply_watermark, data, ct)
             storage_path = _make_storage_path(url, article_slug)
             # L'upload Supabase est synchrone, on le fait en executor
             public_url = await loop.run_in_executor(
