@@ -632,6 +632,36 @@ async def yt_sources_delete(source_id: str):
     return {"success": True}
 
 
+# --- Test / Preview d'une chaîne YouTube ---
+class YouTubeTestRequest(BaseModel):
+    channel_url: str
+    count: int = 10
+
+@app.post("/api/youtube/test")
+async def yt_test_channel(body: YouTubeTestRequest):
+    """Tester une chaîne YouTube : renvoie les N dernières vidéos (titre + miniature)."""
+    try:
+        videos = await fetch_channel_videos(body.channel_url, body.count)
+        if not videos:
+            return {"success": False, "error": "Aucune vidéo trouvée", "videos": []}
+        return {
+            "success": True,
+            "count": len(videos),
+            "videos": [
+                {
+                    "video_id": v.video_id,
+                    "title": v.title,
+                    "thumbnail_url": v.thumbnail_url,
+                    "published_at": v.published_at,
+                }
+                for v in videos
+            ],
+        }
+    except Exception as e:
+        logger.error("[YT] Erreur test channel %s : %s", body.channel_url, e)
+        return {"success": False, "error": str(e), "videos": []}
+
+
 # --- Refresh vidéos ---
 @app.post("/api/youtube/refresh")
 async def yt_refresh_now():

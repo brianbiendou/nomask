@@ -14,6 +14,8 @@ import {
   ExternalLink,
   AlertCircle,
   Image,
+  Play,
+  X,
 } from "lucide-react";
 
 interface YouTubeSource {
@@ -30,6 +32,13 @@ interface YouTubeConfig {
   enabled: boolean;
   refresh_hours: number[];
   rotation_minutes: number;
+}
+
+interface TestVideo {
+  video_id: string;
+  title: string;
+  thumbnail_url: string;
+  published_at: string;
 }
 
 const SLOT_LABELS: Record<string, string> = {
@@ -58,6 +67,13 @@ export default function VideosAdminPage() {
   const [newUrl, setNewUrl] = useState("");
   const [newSlot, setNewSlot] = useState("main");
   const [newCount, setNewCount] = useState(10);
+
+  // Test modal
+  const [testModal, setTestModal] = useState(false);
+  const [testLoading, setTestLoading] = useState(false);
+  const [testSourceName, setTestSourceName] = useState("");
+  const [testVideos, setTestVideos] = useState<TestVideo[]>([]);
+  const [testError, setTestError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -153,6 +169,30 @@ export default function VideosAdminPage() {
       alert(e instanceof Error ? e.message : "Erreur refresh");
     }
     setRefreshing(false);
+  };
+
+  const handleTestSource = async (channelUrl: string, name: string, count: number = 10) => {
+    setTestSourceName(name);
+    setTestVideos([]);
+    setTestError(null);
+    setTestModal(true);
+    setTestLoading(true);
+    try {
+      const res = await fetch("/api/admin/youtube/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ channel_url: channelUrl, count }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setTestError(data.error || "Impossible de récupérer les vidéos");
+      } else {
+        setTestVideos(data.videos ?? []);
+      }
+    } catch (e: unknown) {
+      setTestError(e instanceof Error ? e.message : "Erreur réseau");
+    }
+    setTestLoading(false);
   };
 
   if (loading) {
@@ -374,6 +414,14 @@ export default function VideosAdminPage() {
                   Ajouter la source
                 </button>
                 <button
+                  onClick={() => newUrl && handleTestSource(newUrl, newName || "Nouveau", newCount)}
+                  disabled={!newUrl}
+                  className="px-4 py-2 bg-gray-800 text-white rounded-lg text-xs font-medium hover:bg-gray-700 disabled:opacity-40 transition-colors flex items-center gap-1.5"
+                >
+                  <Play size={12} />
+                  Tester
+                </button>
+                <button
                   onClick={() => setShowAdd(false)}
                   className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-300 transition-colors"
                 >
@@ -422,6 +470,13 @@ export default function VideosAdminPage() {
 
                 {/* Actions */}
                 <div className="flex items-center gap-2 flex-shrink-0">
+                  <button
+                    onClick={() => handleTestSource(src.channel_url, src.name, src.video_count)}
+                    className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors"
+                    title="Tester la récupération"
+                  >
+                    <Play size={14} />
+                  </button>
                   <button onClick={() => handleToggleSource(src)}>
                     {src.enabled ? (
                       <ToggleRight size={22} className="text-[#DC2626]" />
@@ -448,6 +503,112 @@ export default function VideosAdminPage() {
         </div>
 
       </div>
+
+      {/* === Modale Test YouTube === */}
+      {testModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col">
+            {/* Header modale */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <div>
+                <h3 className="font-bold text-gray-900">Test : {testSourceName}</h3>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {testLoading
+                    ? "Récupération en cours..."
+                    : testError
+                    ? "Échec de la récupération"
+                    : `${testVideos.length} vidéo${testVideos.length > 1 ? "s" : ""} récupérée${testVideos.length > 1 ? "s" : ""}`}
+                </p>
+              </div>
+              <button
+                onClick={() => setTestModal(false)}
+                className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Body modale */}
+            <div className="flex-1 overflow-y-auto px-6 py-4">
+              {testLoading && (
+                <div className="flex flex-col items-center justify-center py-16 gap-3">
+                  <Loader2 size={32} className="animate-spin text-[#DC2626]" />
+                  <p className="text-sm text-gray-500">Connexion à YouTube...</p>
+                </div>
+              )}
+
+              {testError && !testLoading && (
+                <div className="flex flex-col items-center justify-center py-16 gap-3">
+                  <AlertCircle size={32} className="text-red-400" />
+                  <p className="text-sm text-red-600 font-medium">{testError}</p>
+                  <p className="text-xs text-gray-400">Vérifiez l&apos;URL de la chaîne et réessayez</p>
+                </div>
+              )}
+
+              {!testLoading && !testError && testVideos.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  {testVideos.map((v, i) => (
+                    <a
+                      key={v.video_id}
+                      href={`https://www.youtube.com/watch?v=${v.video_id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group block rounded-xl overflow-hidden border border-gray-100 hover:border-[#DC2626]/30 hover:shadow-md transition-all"
+                    >
+                      <div className="relative aspect-video bg-gray-100">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={v.thumbnail_url}
+                          alt={v.title}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute top-2 left-2 bg-black/70 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
+                          #{i + 1}
+                        </div>
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                          <Play size={28} className="text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
+                        </div>
+                      </div>
+                      <div className="p-2.5">
+                        <p className="text-xs font-medium text-gray-800 leading-tight line-clamp-2">
+                          {v.title}
+                        </p>
+                        {v.published_at && (
+                          <p className="text-[10px] text-gray-400 mt-1">
+                            {new Date(v.published_at).toLocaleDateString("fr-FR", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                            })}
+                          </p>
+                        )}
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer modale */}
+            <div className="px-6 py-3 border-t border-gray-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {!testLoading && !testError && testVideos.length > 0 && (
+                  <span className="flex items-center gap-1.5 text-xs text-green-600 font-medium">
+                    <CheckCircle2 size={14} />
+                    Récupération OK
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={() => setTestModal(false)}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-xl text-xs font-medium hover:bg-gray-200 transition-colors"
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
