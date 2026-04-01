@@ -1,6 +1,5 @@
 import {
   getArticles,
-  getBreakingNews,
   getArticlesByCategory,
   getArticlesBySubcategory,
   getYouTubeCurrentVideos,
@@ -15,7 +14,6 @@ export const revalidate = 300;
 
 export default async function HomePage() {
   const [
-    breakingNews,
     latestArticles,
     techArticles,
     sportArticles,
@@ -23,7 +21,6 @@ export default async function HomePage() {
     buyingGuides,
     ytVideos,
   ] = await Promise.all([
-    getBreakingNews(),
     getArticles({ limit: 50 }),
     getArticlesByCategory("tech", "fr", 4),
     getArticlesByCategory("sport", "fr", 3),
@@ -69,13 +66,10 @@ export default async function HomePage() {
   // Toute l'actualité : le reste (encore non utilisé)
   const allNewsArticles = latestArticles.filter((a) => !usedIds.has(a.id));
 
-  // Trending : breaking news en priorité, sinon articles récents non encore affichés
-  const trendingTopics =
-    breakingNews.length > 0
-      ? breakingNews.map((a) => ({ title: a.title, url: `/${a.category?.slug}/${a.slug}` }))
-      : allNewsArticles
-          .slice(0, 5)
-          .map((a) => ({ title: a.title, url: `/${a.category?.slug}/${a.slug}` }));
+  // Trending : toujours les articles les plus récents (dynamique à chaque publication)
+  const trendingTopics = latestArticles
+    .slice(0, 5)
+    .map((a) => ({ title: a.title, url: `/${a.category?.slug}/${a.slug}` }));
 
   return (
     <div className="min-h-screen">
