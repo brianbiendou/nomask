@@ -28,9 +28,9 @@ export default function HeroCarousel({ articles }: HeroCarouselProps) {
     setCurrent((prev) => (prev - 1 + total) % total);
   }, [total]);
 
-  // Auto-play toutes les 5 secondes
+  // Auto-play toutes les 8 secondes
   useEffect(() => {
-    const timer = setInterval(next, 5000);
+    const timer = setInterval(next, 8000);
     return () => clearInterval(timer);
   }, [next]);
 
