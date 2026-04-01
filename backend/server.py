@@ -30,7 +30,7 @@ if sys.platform == "win32":
 
 from pipeline import run_pipeline, process_single_article, is_url_already_processed, clear_processed_urls
 from discovery import discover_and_return_urls, discover_trending, discover_trending_multi, SITE_PROFILES
-from config import DEFAULT_PERSPECTIVE, OLLAMA_MODEL, OLLAMA_BASE_URL
+from config import DEFAULT_PERSPECTIVE, OLLAMA_MODEL, OLLAMA_BASE_URL, OLLAMA_TIMEOUT
 from scraper import scrape_batch
 
 app = FastAPI(title="NoMask Backend", version="1.0.0")
@@ -414,6 +414,11 @@ async def auto_get():
         "lastRun": _auto_last_run,
         "nextRun": _auto_next_run,
         "running": _auto_task is not None and not _auto_task.done() if _auto_task else False,
+        "ollama": {
+            "url": OLLAMA_BASE_URL,
+            "model": OLLAMA_MODEL,
+            "timeout": OLLAMA_TIMEOUT,
+        },
     }
 
 

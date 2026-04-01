@@ -14,8 +14,8 @@ import {
 
 export default function SettingsPage() {
   const [perspective, setPerspective] = useState("analyse critique et tech-savvy");
-  const [ollamaUrl, setOllamaUrl] = useState("http://localhost:11434");
-  const [ollamaModel, setOllamaModel] = useState("qwen2.5:7b");
+  const [ollamaUrl, setOllamaUrl] = useState("");
+  const [ollamaModel, setOllamaModel] = useState("");
   const [ollamaTimeout, setOllamaTimeout] = useState(120);
   const [autoMode, setAutoMode] = useState(false);
   const [hoursLookback, setHoursLookback] = useState(24);
@@ -35,6 +35,11 @@ export default function SettingsPage() {
         setPerspective(data.config.perspective);
         setNextRun(data.nextRun);
         setLastRun(data.lastRun);
+        if (data.ollama) {
+          setOllamaUrl(data.ollama.url);
+          setOllamaModel(data.ollama.model);
+          setOllamaTimeout(data.ollama.timeout);
+        }
       }
     } catch { /* silent */ }
   }, []);
