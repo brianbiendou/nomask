@@ -7,7 +7,6 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  MessageSquare,
   Image,
   Link2,
   Clock,
@@ -56,11 +55,10 @@ type SortField =
   | "created_at"
   | "title"
   | "read_time"
-  | "comment_count"
   | "image_count"
   | "link_count";
 
-const COMPUTED_FIELDS: string[] = ["comment_count", "image_count", "link_count"];
+const COMPUTED_FIELDS: string[] = ["image_count", "link_count"];
 
 export default function ArticlesStatsPage() {
   const [data, setData] = useState<ApiResponse | null>(null);
@@ -125,6 +123,14 @@ export default function ArticlesStatsPage() {
       day: "2-digit",
       month: "short",
       year: "numeric",
+    });
+  };
+
+  const formatTime = (date: string | null) => {
+    if (!date) return "—";
+    return new Date(date).toLocaleTimeString("fr-FR", {
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -238,12 +244,12 @@ export default function ArticlesStatsPage() {
                   </th>
                   <th className="text-center px-3 py-3 font-medium text-gray-500">
                     <button
-                      onClick={() => handleSort("comment_count")}
+                      onClick={() => handleSort("published_at")}
                       className="flex items-center gap-1 hover:text-gray-900 mx-auto"
-                      title="Commentaires"
+                      title="Heure de publication"
                     >
-                      <MessageSquare size={14} />
-                      <SortIcon field="comment_count" />
+                      <Clock size={14} />
+                      <SortIcon field="published_at" />
                     </button>
                   </th>
                   <th className="text-center px-3 py-3 font-medium text-gray-500">
@@ -315,14 +321,8 @@ export default function ArticlesStatsPage() {
                       {formatDate(article.published_at)}
                     </td>
                     <td className="px-3 py-3 text-center">
-                      <span
-                        className={`font-medium ${
-                          article.comment_count > 0
-                            ? "text-blue-600"
-                            : "text-gray-300"
-                        }`}
-                      >
-                        {article.comment_count}
+                      <span className="text-gray-600 text-xs">
+                        {formatTime(article.published_at)}
                       </span>
                     </td>
                     <td className="px-3 py-3 text-center text-gray-600">

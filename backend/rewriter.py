@@ -1,6 +1,6 @@
-"""Module de réécriture — réécrit un article via gemma3:12b (Ollama local).
+"""Module de réécriture — réécrit un article via Ollama local.
 
-Utilise le modèle gemma3:12b via l'API Ollama pour :
+Utilise le modèle configuré (OLLAMA_MODEL) via l'API Ollama pour :
 1. Réécrire le contenu complet de l'article
 2. Réécrire le titre
 3. Réécrire l'extrait/chapô
@@ -96,7 +96,7 @@ def rewrite_content(
     content_text: str,
     perspective: str = DEFAULT_PERSPECTIVE,
 ) -> str:
-    """Réécrit le contenu HTML via gemma3:12b."""
+    """Réécrit le contenu HTML via Ollama."""
     system = SYSTEM_REWRITE_CONTENT.format(perspective=perspective)
 
     # On envoie le texte brut pour éviter la confusion avec le HTML source
@@ -127,7 +127,7 @@ Réécris cet article INTÉGRALEMENT en HTML (h2, h3, p, strong, em). Garde tout
 
 
 def rewrite_title(title: str, perspective: str = DEFAULT_PERSPECTIVE) -> str:
-    """Réécrit le titre via gemma3:12b."""
+    """Réécrit le titre via Ollama."""
     system = SYSTEM_REWRITE_TITLE.format(perspective=perspective)
     user_prompt = f"Titre original : {title}"
 
@@ -149,7 +149,7 @@ def rewrite_title(title: str, perspective: str = DEFAULT_PERSPECTIVE) -> str:
 
 
 def rewrite_excerpt(excerpt: str, perspective: str = DEFAULT_PERSPECTIVE) -> str:
-    """Réécrit l'extrait via gemma3:12b."""
+    """Réécrit l'extrait via Ollama."""
     system = SYSTEM_REWRITE_EXCERPT.format(perspective=perspective)
     user_prompt = f"Chapô original : {excerpt}"
 

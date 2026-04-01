@@ -26,7 +26,7 @@ DEFAULT_PERSPECTIVE = "neutre et factuel, style journalistique professionnel"
 # Ollama (LLM local)
 # En Docker : OLLAMA_URL=http://host.docker.internal:11434
 OLLAMA_BASE_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
-OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "gemma3:12b")
+OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "qwen2.5:7b")
 OLLAMA_TIMEOUT = int(os.environ.get("OLLAMA_TIMEOUT", "120"))  # secondes par requête
 
 # Headers pour le scraping

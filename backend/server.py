@@ -67,7 +67,7 @@ def _new_job(source_url: str, perspective: str, mode: str) -> dict:
         "steps": [
             {"name": "Découverte des articles", "status": "pending"},
             {"name": "Scraping du contenu", "status": "pending"},
-            {"name": "Réécriture IA (gemma3:12b)", "status": "pending"},
+            {"name": "Réécriture IA (qwen2.5:7b)", "status": "pending"},
             {"name": "Upload des images", "status": "pending"},
             {"name": "Publication Supabase", "status": "pending"},
         ],
@@ -100,10 +100,9 @@ class PipelineRequest(BaseModel):
 
 class AutoConfig(BaseModel):
     enabled: bool = False
-    intervalHours: int = 2
-    sources: list[str] = ["https://www.numerama.com"]
+    intervalMinutes: int = 15
     perspective: str = DEFAULT_PERSPECTIVE
-    maxArticles: int = 5
+    maxArticles: int = 2
     hoursLookback: int = 24
 
 
@@ -126,25 +125,38 @@ _auto_next_run: Optional[str] = None
 async def _auto_loop():
     global _auto_last_run, _auto_next_run
     while _auto_config.enabled:
-        delay = _auto_config.intervalHours * 3600
+        delay = _auto_config.intervalMinutes * 60
         _auto_next_run = datetime.fromtimestamp(
             datetime.now(timezone.utc).timestamp() + delay, tz=timezone.utc
         ).isoformat()
+        logger.info(f"[AUTO] Prochaine exécution dans {_auto_config.intervalMinutes} min")
         await asyncio.sleep(delay)
 
         _auto_last_run = datetime.now(timezone.utc).isoformat()
-        for source in _auto_config.sources:
+        # Lire les sources activées depuis sources.json
+        all_sources = _load_sources()
+        enabled_sources = [s for s in all_sources if s.get("enabled", True)]
+        if not enabled_sources:
+            logger.warning("[AUTO] Aucune source activée, skip")
+            continue
+        logger.info(f"[AUTO] Exécution avec {len(enabled_sources)} sources activées")
+        for source in enabled_sources:
+            source_url = source.get("url", "")
+            source_name = source.get("name", source_url)
             try:
-                urls = await discover_and_return_urls(source, _auto_config.hoursLookback)
+                urls = await discover_and_return_urls(source_url, _auto_config.hoursLookback)
                 if urls:
                     urls = urls[: _auto_config.maxArticles]
-                    job = _new_job(source, _auto_config.perspective, "auto")
+                    job = _new_job(source_url, _auto_config.perspective, "auto")
                     job["discoveredUrls"] = urls
+                    logger.info(f"[AUTO] {source_name}: {len(urls)} articles découverts, pipeline lancé (job {job['id']})")
                     asyncio.create_task(
                         _run_pipeline_job(job["id"], urls, _auto_config.perspective, False)
                     )
+                else:
+                    logger.info(f"[AUTO] {source_name}: aucun nouvel article trouvé")
             except Exception as e:
-                print(f"[AUTO] Erreur {source}: {e}")
+                logger.error(f"[AUTO] Erreur {source_name}: {e}")
 
 
 def _restart_auto():

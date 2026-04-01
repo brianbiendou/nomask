@@ -15,10 +15,10 @@ import {
 export default function SettingsPage() {
   const [perspective, setPerspective] = useState("analyse critique et tech-savvy");
   const [ollamaUrl, setOllamaUrl] = useState("http://localhost:11434");
-  const [ollamaModel, setOllamaModel] = useState("gemma3:12b");
+  const [ollamaModel, setOllamaModel] = useState("qwen2.5:7b");
   const [ollamaTimeout, setOllamaTimeout] = useState(120);
   const [autoMode, setAutoMode] = useState(false);
-  const [autoInterval, setAutoInterval] = useState(2);
+  const [autoInterval, setAutoInterval] = useState(15);
   const [maxArticlesPerRun, setMaxArticlesPerRun] = useState(5);
   const [hoursLookback, setHoursLookback] = useState(24);
   const [forceByDefault, setForceByDefault] = useState(false);
@@ -33,7 +33,7 @@ export default function SettingsPage() {
       if (res.ok) {
         const data = await res.json();
         setAutoMode(data.config.enabled);
-        setAutoInterval(data.config.intervalHours);
+        setAutoInterval(data.config.intervalMinutes);
         setMaxArticlesPerRun(data.config.maxArticles);
         setHoursLookback(data.config.hoursLookback);
         setPerspective(data.config.perspective);
@@ -53,7 +53,7 @@ export default function SettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           enabled: autoMode,
-          intervalHours: autoInterval,
+          intervalMinutes: autoInterval,
           perspective,
           maxArticles: maxArticlesPerRun,
           hoursLookback,
@@ -140,14 +140,14 @@ export default function SettingsPage() {
             <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-100">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1.5">
-                  Intervalle (heures)
+                  Intervalle (minutes)
                 </label>
                 <input
                   type="number"
                   value={autoInterval}
-                  onChange={(e) => setAutoInterval(Number(e.target.value) || 2)}
-                  min={1}
-                  max={72}
+                  onChange={(e) => setAutoInterval(Number(e.target.value) || 15)}
+                  min={5}
+                  max={1440}
                   className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm
                     focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626] outline-none"
                 />

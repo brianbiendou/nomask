@@ -66,7 +66,7 @@ async def process_single_article(
     category_id = categories[cat_slug]
     print(f"  Catégorie: {cat_slug}")
 
-    # 2. Réécrire titre et contenu via gemma3:12b
+    # 2. Réécrire titre et contenu via Ollama
     print(f"  [IA] Réécriture du titre...")
     new_title = rewrite_title(scraped.title, perspective)
     new_slug = generate_slug(new_title)

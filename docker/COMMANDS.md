@@ -2,6 +2,12 @@
 
 Ce fichier documente toutes les commandes Docker pour gérer le backend.
 
+Commandes utiles:
+  Get-Service cloudflared          # VÃ©rifier le statut
+  Restart-Service cloudflared      # RedÃ©marrer
+  Stop-Service cloudflared         # ArrÃªter
+  cloudflared service uninstall    # DÃ©sinstaller
+
 ---
 
 ## 📋 Table des matières
