@@ -13,6 +13,7 @@ import {
   Trash2,
   Filter,
   Loader2,
+  CheckSquare,
 } from "lucide-react";
 
 interface ArticleStat {
@@ -71,19 +72,66 @@ export default function ArticlesStatsPage() {
 
   const isComputedSort = COMPUTED_FIELDS.includes(sortField);
   const [deleting, setDeleting] = useState<string | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+
+  const toggleSelect = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (!data) return;
+    const allIds = data.articles.map((a) => a.id);
+    const allSelected = allIds.every((id) => selected.has(id));
+    if (allSelected) {
+      setSelected((prev) => {
+        const next = new Set(prev);
+        allIds.forEach((id) => next.delete(id));
+        return next;
+      });
+    } else {
+      setSelected((prev) => {
+        const next = new Set(prev);
+        allIds.forEach((id) => next.add(id));
+        return next;
+      });
+    }
+  };
 
   const handleDelete = async (id: string) => {
     setDeleting(id);
     try {
       const res = await fetch(`/api/admin/articles/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Erreur suppression");
-      setConfirmDelete(null);
+      setSelected((prev) => { const next = new Set(prev); next.delete(id); return next; });
       fetchArticles();
     } catch {
       alert("Erreur lors de la suppression");
     }
     setDeleting(null);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selected.size === 0) return;
+    setBulkDeleting(true);
+    try {
+      const res = await fetch("/api/admin/articles/bulk-delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: Array.from(selected) }),
+      });
+      if (!res.ok) throw new Error("Erreur suppression");
+      setSelected(new Set());
+      fetchArticles();
+    } catch {
+      alert("Erreur lors de la suppression groupée");
+    }
+    setBulkDeleting(false);
   };
 
   const fetchArticles = useCallback(async () => {
@@ -186,6 +234,30 @@ export default function ArticlesStatsPage() {
         </p>
       </div>
 
+      {/* Bulk Delete Bar */}
+      {selected.size > 0 && (
+        <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">
+          <CheckSquare size={16} className="text-red-600" />
+          <span className="text-sm font-medium text-red-700">
+            {selected.size} article{selected.size > 1 ? "s" : ""} sélectionné{selected.size > 1 ? "s" : ""}
+          </span>
+          <button
+            onClick={handleBulkDelete}
+            disabled={bulkDeleting}
+            className="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+          >
+            {bulkDeleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+            Supprimer la sélection
+          </button>
+          <button
+            onClick={() => setSelected(new Set())}
+            className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            Annuler
+          </button>
+        </div>
+      )}
+
       {/* Filters */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="flex items-center gap-2">
@@ -235,6 +307,14 @@ export default function ArticlesStatsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50/50">
+                  <th className="px-3 py-3 w-10">
+                    <input
+                      type="checkbox"
+                      checked={!!data && data.articles.length > 0 && data.articles.every((a) => selected.has(a.id))}
+                      onChange={toggleSelectAll}
+                      className="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-500 cursor-pointer"
+                    />
+                  </th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500">
                     <button
                       onClick={() => handleSort("title")}
@@ -306,8 +386,18 @@ export default function ArticlesStatsPage() {
                 {data?.articles.map((article) => (
                   <tr
                     key={article.id}
-                    className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
+                    className={`border-b border-gray-50 hover:bg-gray-50/50 transition-colors ${
+                      selected.has(article.id) ? "bg-red-50/50" : ""
+                    }`}
                   >
+                    <td className="px-3 py-3">
+                      <input
+                        type="checkbox"
+                        checked={selected.has(article.id)}
+                        onChange={() => toggleSelect(article.id)}
+                        className="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-500 cursor-pointer"
+                      />
+                    </td>
                     <td className="px-4 py-3 max-w-[300px]">
                       <p className="font-medium text-gray-900 truncate">
                         {article.title}
@@ -366,38 +456,21 @@ export default function ArticlesStatsPage() {
                       </span>
                     </td>
                     <td className="px-3 py-3 text-center">
-                      {confirmDelete === article.id ? (
-                        <div className="flex items-center justify-center gap-1">
-                          <button
-                            onClick={() => handleDelete(article.id)}
-                            disabled={deleting === article.id}
-                            className="px-2 py-0.5 bg-red-600 text-white rounded text-[10px] font-medium hover:bg-red-700 disabled:opacity-50"
-                          >
-                            {deleting === article.id ? <Loader2 size={10} className="animate-spin" /> : "Oui"}
-                          </button>
-                          <button
-                            onClick={() => setConfirmDelete(null)}
-                            className="px-2 py-0.5 bg-gray-200 text-gray-600 rounded text-[10px] font-medium hover:bg-gray-300"
-                          >
-                            Non
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => setConfirmDelete(article.id)}
-                          className="p-1.5 rounded-lg hover:bg-red-50 text-gray-300 hover:text-red-500 transition-colors"
-                          title="Supprimer cet article"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      )}
+                      <button
+                        onClick={() => handleDelete(article.id)}
+                        disabled={deleting === article.id}
+                        className="p-1.5 rounded-lg hover:bg-red-50 text-gray-300 hover:text-red-500 transition-colors disabled:opacity-50"
+                        title="Supprimer cet article"
+                      >
+                        {deleting === article.id ? <Loader2 size={14} className="animate-spin text-red-500" /> : <Trash2 size={14} />}
+                      </button>
                     </td>
                   </tr>
                 ))}
                 {data?.articles.length === 0 && (
                   <tr>
                     <td
-                      colSpan={9}
+                      colSpan={10}
                       className="px-4 py-12 text-center text-gray-400"
                     >
                       Aucun article trouvé
