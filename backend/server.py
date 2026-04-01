@@ -133,9 +133,7 @@ class PipelineRequest(BaseModel):
 
 class AutoConfig(BaseModel):
     enabled: bool = False
-    intervalMinutes: int = 15
     perspective: str = DEFAULT_PERSPECTIVE
-    maxArticles: int = 2
     hoursLookback: int = 24
 
 
@@ -153,44 +151,64 @@ _auto_config = AutoConfig()
 _auto_task: Optional[asyncio.Task] = None
 _auto_last_run: Optional[str] = None
 _auto_next_run: Optional[str] = None
+_source_last_run: dict[str, float] = {}  # source_id → timestamp dernière exécution
+
+_AUTO_TICK_SECONDS = 30  # Vérifie les sources toutes les 30 sec
 
 
 async def _auto_loop():
     global _auto_last_run, _auto_next_run
+    logger.info("[AUTO] Boucle démarrée — vérification toutes les %ds", _AUTO_TICK_SECONDS)
     while _auto_config.enabled:
-        delay = _auto_config.intervalMinutes * 60
-        _auto_next_run = datetime.fromtimestamp(
-            datetime.now(timezone.utc).timestamp() + delay, tz=timezone.utc
-        ).isoformat()
-        logger.info(f"[AUTO] Prochaine exécution dans {_auto_config.intervalMinutes} min")
-        await asyncio.sleep(delay)
+        await asyncio.sleep(_AUTO_TICK_SECONDS)
 
-        _auto_last_run = datetime.now(timezone.utc).isoformat()
-        # Lire les sources activées depuis sources.json
+        now = datetime.now(timezone.utc).timestamp()
         all_sources = _load_sources()
         enabled_sources = [s for s in all_sources if s.get("enabled", True)]
         if not enabled_sources:
-            logger.warning("[AUTO] Aucune source activée, skip")
             continue
-        logger.info(f"[AUTO] Exécution avec {len(enabled_sources)} sources activées")
+
         for source in enabled_sources:
+            source_id = source.get("id", source.get("url", ""))
             source_url = source.get("url", "")
             source_name = source.get("name", source_url)
-            source_max = source.get("maxArticles", _auto_config.maxArticles)
+            source_interval = source.get("intervalMinutes", 15) * 60  # en secondes
+            source_max = source.get("maxArticles", 2)
+
+            last = _source_last_run.get(source_id, 0)
+            if now - last < source_interval:
+                continue  # pas encore le moment pour cette source
+
+            _source_last_run[source_id] = now
+            _auto_last_run = datetime.now(timezone.utc).isoformat()
+            logger.info(f"[AUTO] {source_name}: intervalle {source.get('intervalMinutes', 15)} min écoulé, lancement...")
+
             try:
                 urls = await discover_and_return_urls(source_url, _auto_config.hoursLookback)
                 if urls:
-                    urls = urls[: source_max]
+                    urls = urls[:source_max]
                     job = _new_job(source_url, _auto_config.perspective, "auto")
                     job["discoveredUrls"] = urls
-                    logger.info(f"[AUTO] {source_name}: {len(urls)} articles découverts (max {source_max}), pipeline lancé (job {job['id']})")
+                    logger.info(f"[AUTO] {source_name}: {len(urls)} articles (max {source_max}), job {job['id']}")
                     asyncio.create_task(
                         _run_pipeline_job(job["id"], urls, _auto_config.perspective, False)
                     )
                 else:
-                    logger.info(f"[AUTO] {source_name}: aucun nouvel article trouvé")
+                    logger.info(f"[AUTO] {source_name}: aucun nouvel article")
             except Exception as e:
                 logger.error(f"[AUTO] Erreur {source_name}: {e}")
+
+        # Calculer la prochaine exécution (la source la plus proche)
+        next_ts = None
+        for source in enabled_sources:
+            sid = source.get("id", source.get("url", ""))
+            interval = source.get("intervalMinutes", 15) * 60
+            last = _source_last_run.get(sid, 0)
+            nxt = last + interval
+            if next_ts is None or nxt < next_ts:
+                next_ts = nxt
+        if next_ts:
+            _auto_next_run = datetime.fromtimestamp(next_ts, tz=timezone.utc).isoformat()
 
 
 def _restart_auto():
