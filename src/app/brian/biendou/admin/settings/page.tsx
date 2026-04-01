@@ -33,6 +33,7 @@ export default function SettingsPage() {
         setAutoMode(data.config.enabled);
         setHoursLookback(data.config.hoursLookback);
         setPerspective(data.config.perspective);
+        setForceByDefault(data.config.forceByDefault ?? false);
         setNextRun(data.nextRun);
         setLastRun(data.lastRun);
         if (data.ollama) {
@@ -56,6 +57,7 @@ export default function SettingsPage() {
           enabled: autoMode,
           perspective,
           hoursLookback,
+          forceByDefault,
         }),
       });
       if (res.ok) {
@@ -204,9 +206,8 @@ export default function SettingsPage() {
                 </label>
                 <input
                   value={ollamaUrl}
-                  onChange={(e) => setOllamaUrl(e.target.value)}
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm
-                    focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626] outline-none"
+                  readOnly
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-500 cursor-not-allowed outline-none"
                 />
               </div>
               <div>
@@ -215,9 +216,8 @@ export default function SettingsPage() {
                 </label>
                 <input
                   value={ollamaModel}
-                  onChange={(e) => setOllamaModel(e.target.value)}
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm
-                    focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626] outline-none"
+                  readOnly
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-500 cursor-not-allowed outline-none"
                 />
               </div>
             </div>
@@ -229,11 +229,8 @@ export default function SettingsPage() {
               <input
                 type="number"
                 value={ollamaTimeout}
-                onChange={(e) => setOllamaTimeout(Number(e.target.value) || 120)}
-                min={30}
-                max={600}
-                className="w-32 rounded-xl border border-gray-200 px-3 py-2.5 text-sm
-                  focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626] outline-none"
+                readOnly
+                className="w-32 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-500 cursor-not-allowed outline-none"
               />
             </div>
           </div>

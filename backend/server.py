@@ -135,6 +135,7 @@ class AutoConfig(BaseModel):
     enabled: bool = False
     perspective: str = DEFAULT_PERSPECTIVE
     hoursLookback: int = 24
+    forceByDefault: bool = False
 
 
 class TrendingRequest(BaseModel):
@@ -196,7 +197,7 @@ async def _auto_loop():
                     job["discoveredUrls"] = new_urls
                     logger.info(f"[AUTO] {source_name}: {len(new_urls)} nouveaux articles (max {source_max}), job {job['id']}")
                     asyncio.create_task(
-                        _run_pipeline_job(job["id"], new_urls, _auto_config.perspective, False)
+                        _run_pipeline_job(job["id"], new_urls, _auto_config.perspective, _auto_config.forceByDefault)
                     )
                 else:
                     logger.info(f"[AUTO] {source_name}: aucun nouvel article")
