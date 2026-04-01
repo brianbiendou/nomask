@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { checkAuth } from "@/lib/backend";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
@@ -44,6 +45,10 @@ export async function POST(request: NextRequest) {
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    // Purger le cache Next.js
+    revalidatePath("/");
+    revalidatePath("/[category]", "page");
 
     return NextResponse.json({ success: true, deleted: count });
   } catch (error: unknown) {
