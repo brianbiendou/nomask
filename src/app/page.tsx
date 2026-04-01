@@ -1,7 +1,6 @@
 import {
   getArticles,
   getBreakingNews,
-  getMostRecentArticles,
   getArticlesByCategory,
   getArticlesBySubcategory,
 } from "@/lib/queries";
@@ -17,42 +16,61 @@ export default async function HomePage() {
   const [
     breakingNews,
     latestArticles,
-    mostRecent,
     techArticles,
     sportArticles,
     economieArticles,
     buyingGuides,
   ] = await Promise.all([
     getBreakingNews(),
-    getArticles({ limit: 30 }),
-    getMostRecentArticles("fr", 30),
+    getArticles({ limit: 50 }),
     getArticlesByCategory("tech", "fr", 4),
     getArticlesByCategory("sport", "fr", 3),
     getArticlesByCategory("economie", "fr", 3),
     getArticlesBySubcategory("tech", "guides-achat", "fr", 4),
   ]);
 
-  // Chronologique : hero carousel = 6 premiers, sidebar = 4 suivants, etc.
-  const heroArticles = latestArticles.slice(0, 6);
-  const sidebarArticles = latestArticles.slice(6, 10);
+  // === RÉPARTITION EXCLUSIVE — chaque article n'apparaît que dans UNE section ===
+  // On utilise un Set pour tracer tout ce qui est "pris"
+  const usedIds = new Set<string>();
 
-  // "À lire absolument" = les 3 suivants
-  const mustReadArticles = latestArticles.slice(10, 13);
+  function takeExclusive(source: typeof latestArticles, count: number) {
+    const result: typeof latestArticles = [];
+    for (const a of source) {
+      if (result.length >= count) break;
+      if (!usedIds.has(a.id)) {
+        result.push(a);
+        usedIds.add(a.id);
+      }
+    }
+    return result;
+  }
 
-  // NoMask+ = les 3 suivants
-  const topIds = new Set(latestArticles.slice(0, 16).map((a) => a.id));
-  const plusArticles = latestArticles.slice(13, 16);
+  // Hero carousel : 6 premiers articles
+  const heroArticles = takeExclusive(latestArticles, 6);
 
-  // Toute l'actualité = le reste (dédupliqué)
-  const allNewsArticles = mostRecent.filter((a) => !topIds.has(a.id));
+  // Sidebar droite : 4 suivants
+  const sidebarArticles = takeExclusive(latestArticles, 4);
 
-  // Trending : breaking news en priorité, sinon articles récents non affichés ailleurs
-  const heroAndSidebarIds = new Set([...heroArticles.map((a) => a.id), ...sidebarArticles.map((a) => a.id)]);
+  // "À lire absolument" : 3 suivants
+  const mustReadArticles = takeExclusive(latestArticles, 3);
+
+  // "Le récap'" : 1 avec image + 6 texte = 7 suivants
+  const recapArticles = takeExclusive(latestArticles, 7);
+
+  // "Les dernières actus" : 2 top + 4 "Ce qu'il ne fallait pas manquer" = 6
+  const lastNewsArticles = takeExclusive(latestArticles, 6);
+
+  // NoMask+ : 3 suivants
+  const plusArticles = takeExclusive(latestArticles, 3);
+
+  // Toute l'actualité : le reste (encore non utilisé)
+  const allNewsArticles = latestArticles.filter((a) => !usedIds.has(a.id));
+
+  // Trending : breaking news en priorité, sinon articles récents non encore affichés
   const trendingTopics =
     breakingNews.length > 0
       ? breakingNews.map((a) => ({ title: a.title, url: `/${a.category?.slug}/${a.slug}` }))
-      : mostRecent
-          .filter((a) => !heroAndSidebarIds.has(a.id))
+      : allNewsArticles
           .slice(0, 5)
           .map((a) => ({ title: a.title, url: `/${a.category?.slug}/${a.slug}` }));
 
@@ -131,12 +149,12 @@ export default async function HomePage() {
               <div className="flex-1 h-px bg-gray-200" />
             </div>
             {/* Premier article avec image */}
-            {latestArticles[0] && (
-              <ArticleCard article={latestArticles[0]} variant="recap-first" />
+            {recapArticles[0] && (
+              <ArticleCard article={recapArticles[0]} variant="recap-first" />
             )}
             {/* Articles texte uniquement */}
             <div className="space-y-0">
-              {latestArticles.slice(1, 7).map((article) => (
+              {recapArticles.slice(1, 7).map((article) => (
                 <ArticleCard key={article.id} article={article} variant="recap-text" />
               ))}
             </div>
@@ -168,7 +186,7 @@ export default async function HomePage() {
             <SectionTitle title="Les dernières actus" />
             {/* 2 premiers articles */}
             <div className="mt-4 space-y-0">
-              {mostRecent.slice(0, 2).map((article) => (
+              {lastNewsArticles.slice(0, 2).map((article) => (
                 <ArticleCard key={article.id} article={article} variant="actus-row" />
               ))}
             </div>
@@ -180,7 +198,7 @@ export default async function HomePage() {
             </div>
             {/* 4 articles suivants */}
             <div className="space-y-0">
-              {mostRecent.slice(2, 6).map((article) => (
+              {lastNewsArticles.slice(2, 6).map((article) => (
                 <ArticleCard key={article.id} article={article} variant="actus-row" />
               ))}
             </div>

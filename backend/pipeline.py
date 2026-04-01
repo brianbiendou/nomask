@@ -1,6 +1,9 @@
 """Orchestrateur parallèle — pipeline complet de scraping → publication."""
 import asyncio
+import json
 from datetime import datetime, timezone, timedelta
+from pathlib import Path
+from urllib.parse import urlparse
 
 from scraper import ScrapedArticle, scrape_batch
 from image_handler import process_images, replace_image_urls, ensure_bucket_exists, extract_content_images, inject_images_into_content
@@ -15,6 +18,54 @@ from publisher import (
     estimate_read_time,
 )
 from config import MAX_CONCURRENT_SCRAPES
+
+
+# ────────────────────────────────────────
+# Tracking des URLs sources déjà traitées (anti-doublon)
+# ────────────────────────────────────────
+_PROCESSED_URLS_FILE = Path(__file__).parent / "processed_urls.json"
+_MAX_TRACKED_URLS = 2000  # garder max 2000 entrées
+
+
+def _normalize_url(url: str) -> str:
+    """Normalise une URL pour la comparaison (sans query, fragment, trailing slash)."""
+    parsed = urlparse(url)
+    path = parsed.path.rstrip("/")
+    return f"{parsed.scheme}://{parsed.netloc}{path}"
+
+
+def _load_processed_urls() -> dict[str, dict]:
+    """Charge les URLs déjà traitées. Format: {normalized_url: {source_domain, processed_at}}"""
+    if _PROCESSED_URLS_FILE.exists():
+        try:
+            return json.loads(_PROCESSED_URLS_FILE.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            pass
+    return {}
+
+
+def _save_processed_urls(data: dict[str, dict]) -> None:
+    """Persiste les URLs traitées (garde les plus récentes)."""
+    # Trier par date et garder les plus récentes
+    sorted_items = sorted(data.items(), key=lambda x: x[1].get("processed_at", ""), reverse=True)
+    trimmed = dict(sorted_items[:_MAX_TRACKED_URLS])
+    _PROCESSED_URLS_FILE.write_text(json.dumps(trimmed, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def is_url_already_processed(url: str) -> bool:
+    """Vérifie si cette URL source a déjà été traitée."""
+    data = _load_processed_urls()
+    return _normalize_url(url) in data
+
+
+def mark_url_processed(url: str, source_domain: str = "") -> None:
+    """Marque une URL source comme traitée."""
+    data = _load_processed_urls()
+    data[_normalize_url(url)] = {
+        "source_domain": source_domain,
+        "processed_at": datetime.now(timezone.utc).isoformat(),
+    }
+    _save_processed_urls(data)
 
 
 # Mapping catégories scrappées → slug catégorie Supabase
@@ -58,6 +109,11 @@ async def process_single_article(
     print(f"\n{'='*60}")
     print(f"[PIPELINE] {scraped.title[:70]}...")
     print(f"  URL: {scraped.url}")
+
+    # 0. Anti-doublon : vérifier si cette URL source a déjà été traitée
+    if not force and is_url_already_processed(scraped.url):
+        print(f"  [SKIP] URL source déjà traitée: {scraped.url}")
+        return None
 
     # 1. Déterminer la catégorie
     cat_slug = CATEGORY_MAP.get(scraped.category_hint or "", "tech")
@@ -151,6 +207,13 @@ async def process_single_article(
         read_time=read_time,
         published_at=pub_date.isoformat(),
     )
+
+    if result is None:
+        return None
+
+    # 10. Marquer l'URL source comme traitée (anti-doublon pour les prochains runs)
+    source_domain = urlparse(scraped.url).netloc
+    mark_url_processed(scraped.url, source_domain)
 
     # Ajouter les infos Ollama au résultat
     ollama_used = title_ollama and excerpt_ollama and content_ollama

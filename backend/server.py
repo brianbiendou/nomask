@@ -28,7 +28,7 @@ logger = logging.getLogger("nomask")
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-from pipeline import run_pipeline, process_single_article
+from pipeline import run_pipeline, process_single_article, is_url_already_processed
 from discovery import discover_and_return_urls, discover_trending, discover_trending_multi, SITE_PROFILES
 from config import DEFAULT_PERSPECTIVE, OLLAMA_MODEL, OLLAMA_BASE_URL
 from scraper import scrape_batch
@@ -186,12 +186,17 @@ async def _auto_loop():
             try:
                 urls = await discover_and_return_urls(source_url, _auto_config.hoursLookback)
                 if urls:
-                    urls = urls[:source_max]
+                    # Filtrer les URLs déjà traitées (anti-doublon)
+                    new_urls = [u for u in urls if not is_url_already_processed(u)]
+                    if not new_urls:
+                        logger.info(f"[AUTO] {source_name}: {len(urls)} découverts mais tous déjà traités")
+                        continue
+                    new_urls = new_urls[:source_max]
                     job = _new_job(source_url, _auto_config.perspective, "auto")
-                    job["discoveredUrls"] = urls
-                    logger.info(f"[AUTO] {source_name}: {len(urls)} articles (max {source_max}), job {job['id']}")
+                    job["discoveredUrls"] = new_urls
+                    logger.info(f"[AUTO] {source_name}: {len(new_urls)} nouveaux articles (max {source_max}), job {job['id']}")
                     asyncio.create_task(
-                        _run_pipeline_job(job["id"], urls, _auto_config.perspective, False)
+                        _run_pipeline_job(job["id"], new_urls, _auto_config.perspective, False)
                     )
                 else:
                     logger.info(f"[AUTO] {source_name}: aucun nouvel article")
