@@ -4,28 +4,31 @@
     "name": "Numerama",
     "url": "https://www.numerama.com",
     "enabled": true,
-    "interval": 2
+    "intervalMinutes": 15,
+    "maxArticles": 2
   },
   {
     "id": "lemonde",
     "name": "Le Monde Pixels",
     "url": "https://www.lemonde.fr/pixels/",
     "enabled": true,
-    "interval": 2
+    "intervalMinutes": 15,
+    "maxArticles": 2
   },
   {
     "id": "figaro",
     "name": "Le Figaro Tech",
     "url": "https://www.lefigaro.fr/secteur/high-tech",
     "enabled": true,
-    "interval": 4
+    "intervalMinutes": 30,
+    "maxArticles": 4
   },
   {
     "id": "frandroid",
     "name": "frandroid",
     "url": "https://www.frandroid.com/",
     "enabled": true,
-    "interval": 2,
-    "articlesFound": 0
+    "intervalMinutes": 15,
+    "maxArticles": 2
   }
 ]

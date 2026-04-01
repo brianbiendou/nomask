@@ -19,7 +19,8 @@ interface Source {
   name: string;
   url: string;
   enabled: boolean;
-  interval: number; // heures
+  intervalMinutes: number;
+  maxArticles: number;
   lastRun?: string;
   articlesFound?: number;
 }
@@ -29,7 +30,8 @@ export default function SourcesPage() {
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState("");
   const [newUrl, setNewUrl] = useState("");
-  const [newInterval, setNewInterval] = useState(2);
+  const [newInterval, setNewInterval] = useState(15);
+  const [newMaxArticles, setNewMaxArticles] = useState(2);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -74,13 +76,15 @@ export default function SourcesPage() {
         name: newName,
         url: newUrl,
         enabled: true,
-        interval: newInterval,
+        intervalMinutes: newInterval,
+        maxArticles: newMaxArticles,
         articlesFound: 0,
       },
     ]);
     setNewName("");
     setNewUrl("");
-    setNewInterval(2);
+    setNewInterval(15);
+    setNewMaxArticles(2);
     setShowAdd(false);
   };
 
@@ -192,7 +196,10 @@ export default function SourcesPage() {
                 <div className="flex items-center gap-4 mt-2">
                   <div className="flex items-center gap-1 text-[11px] text-gray-400">
                     <Clock size={11} />
-                    Toutes les {source.interval}h
+                    Toutes les {source.intervalMinutes} min
+                  </div>
+                  <div className="text-[11px] text-gray-400">
+                    {source.maxArticles} article{source.maxArticles > 1 ? "s" : ""} / exécution
                   </div>
                   {source.lastRun && (
                     <div className="text-[11px] text-gray-400">
@@ -209,26 +216,48 @@ export default function SourcesPage() {
 
               {/* Actions */}
               <div className="flex items-center gap-2 shrink-0">
-                {/* Interval input */}
+                {/* Interval input (minutes) */}
                 <div className="flex items-center gap-1">
                   <input
                     type="number"
-                    value={source.interval}
+                    value={source.intervalMinutes}
                     onChange={(e) =>
                       setSources((prev) =>
                         prev.map((s) =>
                           s.id === source.id
-                            ? { ...s, interval: Number(e.target.value) || 1 }
+                            ? { ...s, intervalMinutes: Number(e.target.value) || 15 }
+                            : s
+                        )
+                      )
+                    }
+                    min={5}
+                    max={1440}
+                    className="w-14 rounded-lg border border-gray-200 px-2 py-1.5 text-xs text-center
+                      focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626] outline-none"
+                  />
+                  <span className="text-[10px] text-gray-400">min</span>
+                </div>
+
+                {/* Max articles input */}
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    value={source.maxArticles}
+                    onChange={(e) =>
+                      setSources((prev) =>
+                        prev.map((s) =>
+                          s.id === source.id
+                            ? { ...s, maxArticles: Number(e.target.value) || 2 }
                             : s
                         )
                       )
                     }
                     min={1}
-                    max={72}
+                    max={20}
                     className="w-14 rounded-lg border border-gray-200 px-2 py-1.5 text-xs text-center
                       focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626] outline-none"
                   />
-                  <span className="text-[10px] text-gray-400">h</span>
+                  <span className="text-[10px] text-gray-400">art.</span>
                 </div>
 
                 {/* Toggle */}
@@ -264,7 +293,7 @@ export default function SourcesPage() {
           <h3 className="text-sm font-semibold text-gray-900 mb-3">
             Ajouter une source
           </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-4">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">
                 Nom
@@ -291,13 +320,27 @@ export default function SourcesPage() {
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">
-                Intervalle (h)
+                Intervalle (min)
               </label>
               <input
                 type="number"
                 value={newInterval}
-                onChange={(e) => setNewInterval(Number(e.target.value) || 2)}
+                onChange={(e) => setNewInterval(Number(e.target.value) || 15)}
+                min={5}
+                className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm
+                  focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626] outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                Articles max
+              </label>
+              <input
+                type="number"
+                value={newMaxArticles}
+                onChange={(e) => setNewMaxArticles(Number(e.target.value) || 2)}
                 min={1}
+                max={20}
                 className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm
                   focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626] outline-none"
               />

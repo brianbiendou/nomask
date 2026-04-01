@@ -143,13 +143,14 @@ async def _auto_loop():
         for source in enabled_sources:
             source_url = source.get("url", "")
             source_name = source.get("name", source_url)
+            source_max = source.get("maxArticles", _auto_config.maxArticles)
             try:
                 urls = await discover_and_return_urls(source_url, _auto_config.hoursLookback)
                 if urls:
-                    urls = urls[: _auto_config.maxArticles]
+                    urls = urls[: source_max]
                     job = _new_job(source_url, _auto_config.perspective, "auto")
                     job["discoveredUrls"] = urls
-                    logger.info(f"[AUTO] {source_name}: {len(urls)} articles découverts, pipeline lancé (job {job['id']})")
+                    logger.info(f"[AUTO] {source_name}: {len(urls)} articles découverts (max {source_max}), pipeline lancé (job {job['id']})")
                     asyncio.create_task(
                         _run_pipeline_job(job["id"], urls, _auto_config.perspective, False)
                     )
@@ -440,9 +441,9 @@ def _load_sources() -> list[dict]:
             pass
     # Sources par défaut
     return [
-        {"id": "numerama", "name": "Numerama", "url": "https://www.numerama.com", "enabled": True, "interval": 2},
-        {"id": "lemonde", "name": "Le Monde Pixels", "url": "https://www.lemonde.fr/pixels/", "enabled": True, "interval": 2},
-        {"id": "figaro", "name": "Le Figaro Tech", "url": "https://www.lefigaro.fr/secteur/high-tech", "enabled": False, "interval": 4},
+        {"id": "numerama", "name": "Numerama", "url": "https://www.numerama.com", "enabled": True, "intervalMinutes": 15, "maxArticles": 2},
+        {"id": "lemonde", "name": "Le Monde Pixels", "url": "https://www.lemonde.fr/pixels/", "enabled": True, "intervalMinutes": 15, "maxArticles": 2},
+        {"id": "figaro", "name": "Le Figaro Tech", "url": "https://www.lefigaro.fr/secteur/high-tech", "enabled": False, "intervalMinutes": 30, "maxArticles": 4},
     ]
 
 
