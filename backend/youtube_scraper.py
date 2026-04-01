@@ -1,17 +1,22 @@
-"""Scraper YouTube — récupère titres + miniatures des dernières vidéos d'une chaîne."""
+"""Scraper YouTube — récupère titres + miniatures via le flux RSS Atom natif."""
 import re
-import json
 import logging
 from dataclasses import dataclass
+from xml.etree import ElementTree
 
 import aiohttp
 
 logger = logging.getLogger(__name__)
 
-YOUTUBE_HEADERS = {
+HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-    "Accept-Language": "fr-FR,fr;q=0.9,en;q=0.5",
+    "Accept-Language": "fr-FR,fr;q=0.9",
+    "Cookie": "SOCS=CAISNQgDEitib3FfaWRlbnRpdHlmcm9udGVuZHVpc2VydmVyXzIwMjUwMzMwLjA4X3AxGgJmciACGgYIgOCstgY; CONSENT=PENDING+987",
 }
+
+# Namespace Atom utilisé par YouTube
+ATOM_NS = "{http://www.w3.org/2005/Atom}"
+MEDIA_NS = "{http://search.yahoo.com/mrss/}"
 
 
 @dataclass
@@ -22,104 +27,109 @@ class YouTubeVideo:
     published_at: str | None = None
 
 
-async def fetch_channel_videos(channel_url: str, max_videos: int = 10) -> list[YouTubeVideo]:
-    """Récupère les N dernières vidéos d'une chaîne YouTube (scraping HTML).
-
-    On parse le JSON initial embarqué dans la page /videos pour extraire
-    les videoId, title et thumbnail sans API key.
-    """
-    # S'assurer qu'on tape la page /videos
-    url = channel_url.rstrip("/")
-    if not url.endswith("/videos"):
-        url += "/videos"
-
+async def _resolve_channel_id(channel_url: str) -> str | None:
+    """Extrait le channel_id depuis la page HTML de la chaîne (meta tag)."""
+    url = channel_url.rstrip("/").split("/videos")[0]  # page principale
     try:
-        async with aiohttp.ClientSession(headers=YOUTUBE_HEADERS) as session:
-            async with session.get(url, timeout=aiohttp.ClientTimeout(total=20)) as resp:
+        async with aiohttp.ClientSession(headers=HEADERS) as session:
+            async with session.get(url, timeout=aiohttp.ClientTimeout(total=15)) as resp:
                 if resp.status != 200:
-                    logger.warning("YouTube returned %d for %s", resp.status, url)
-                    return []
+                    logger.warning("Channel page %d for %s", resp.status, url)
+                    return None
                 html = await resp.text()
     except Exception as e:
-        logger.error("Erreur fetch YouTube %s : %s", url, e)
+        logger.error("Erreur fetch channel page %s : %s", url, e)
+        return None
+
+    # Chercher dans les meta tags : <meta itemprop="channelId" content="UC...">
+    m = re.search(r'<meta\s[^>]*itemprop="channelId"[^>]*content="([^"]+)"', html)
+    if m:
+        return m.group(1)
+
+    # Fallback : chercher dans le lien canonical ou externalId dans le JSON
+    m = re.search(r'"externalId"\s*:\s*"(UC[^"]+)"', html)
+    if m:
+        return m.group(1)
+
+    # Fallback 2 : chercher channel_id dans <link rel="alternate" ... href="...channel_id=...">
+    m = re.search(r'channel_id=([A-Za-z0-9_-]+)', html)
+    if m:
+        return m.group(1)
+
+    logger.warning("channel_id introuvable pour %s", url)
+    return None
+
+
+async def fetch_channel_videos(channel_url: str, max_videos: int = 10) -> list[YouTubeVideo]:
+    """Récupère les N dernières vidéos d'une chaîne via le flux RSS Atom.
+
+    Étapes :
+    1. Résoudre channel_id depuis la page de la chaîne
+    2. Fetch le flux RSS : https://www.youtube.com/feeds/videos.xml?channel_id=...
+    3. Parser le XML Atom → titres + video_id → miniatures
+    """
+    # 1. Résoudre le channel_id
+    channel_id = await _resolve_channel_id(channel_url)
+    if not channel_id:
+        logger.error("Impossible de résoudre channel_id pour %s", channel_url)
         return []
 
-    return _parse_videos_from_html(html, max_videos)
+    logger.info("[YT] channel_id résolu : %s pour %s", channel_id, channel_url)
 
-
-def _parse_videos_from_html(html: str, max_videos: int) -> list[YouTubeVideo]:
-    """Extrait les vidéos du JSON ytInitialData embarqué dans le HTML."""
-    # Trouver le blob JSON ytInitialData
-    match = re.search(r"var ytInitialData\s*=\s*(\{.*?\});\s*</script>", html, re.DOTALL)
-    if not match:
-        # Essayer variante sans var
-        match = re.search(r"ytInitialData\s*=\s*(\{.*?\});\s*</script>", html, re.DOTALL)
-    if not match:
-        logger.warning("ytInitialData introuvable dans le HTML YouTube")
-        return []
-
+    # 2. Fetch le flux RSS Atom
+    rss_url = f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
     try:
-        data = json.loads(match.group(1))
-    except json.JSONDecodeError as e:
-        logger.error("Erreur parsing ytInitialData : %s", e)
+        async with aiohttp.ClientSession(headers=HEADERS) as session:
+            async with session.get(rss_url, timeout=aiohttp.ClientTimeout(total=15)) as resp:
+                if resp.status != 200:
+                    logger.warning("RSS feed %d for %s", resp.status, rss_url)
+                    return []
+                xml_text = await resp.text()
+    except Exception as e:
+        logger.error("Erreur fetch RSS %s : %s", rss_url, e)
+        return []
+
+    # 3. Parser le XML
+    return _parse_rss(xml_text, max_videos)
+
+
+def _parse_rss(xml_text: str, max_videos: int) -> list[YouTubeVideo]:
+    """Parse le flux Atom YouTube et retourne les vidéos."""
+    try:
+        root = ElementTree.fromstring(xml_text)
+    except ElementTree.ParseError as e:
+        logger.error("Erreur XML parse : %s", e)
         return []
 
     videos: list[YouTubeVideo] = []
 
-    # Naviguer dans la structure JSON pour trouver les vidéos
-    try:
-        tabs = data["contents"]["twoColumnBrowseResultsRenderer"]["tabs"]
-        videos_tab = None
-        for tab in tabs:
-            tr = tab.get("tabRenderer", {})
-            if tr.get("selected") and tr.get("content"):
-                videos_tab = tr
-                break
+    for entry in root.findall(f"{ATOM_NS}entry"):
+        if len(videos) >= max_videos:
+            break
 
-        if not videos_tab:
-            logger.warning("Onglet vidéos introuvable")
-            return []
+        # video_id depuis <yt:videoId>
+        vid_el = entry.find("{http://www.youtube.com/xml/schemas/2015}videoId")
+        if vid_el is None or not vid_el.text:
+            continue
+        video_id = vid_el.text.strip()
 
-        rich_grid = videos_tab["content"]["richGridRenderer"]["contents"]
+        # Titre
+        title_el = entry.find(f"{ATOM_NS}title")
+        title = title_el.text.strip() if title_el is not None and title_el.text else "Sans titre"
 
-        for item in rich_grid:
-            if len(videos) >= max_videos:
-                break
+        # Miniature haute qualité (format standard YouTube)
+        thumbnail_url = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
 
-            renderer = (
-                item.get("richItemRenderer", {})
-                .get("content", {})
-                .get("videoRenderer")
-            )
-            if not renderer:
-                continue
+        # Date de publication
+        pub_el = entry.find(f"{ATOM_NS}published")
+        published_at = pub_el.text.strip() if pub_el is not None and pub_el.text else None
 
-            video_id = renderer.get("videoId", "")
-            if not video_id:
-                continue
+        videos.append(YouTubeVideo(
+            video_id=video_id,
+            title=title,
+            thumbnail_url=thumbnail_url,
+            published_at=published_at,
+        ))
 
-            # Titre
-            title_runs = renderer.get("title", {}).get("runs", [])
-            title = title_runs[0]["text"] if title_runs else "Sans titre"
-
-            # Miniature — on utilise le format standard YouTube haute qualité
-            thumbnail_url = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
-
-            # Date de publication (texte relatif, ex: "il y a 2 jours")
-            published_text = None
-            pub_renderer = renderer.get("publishedTimeText", {})
-            if pub_renderer:
-                published_text = pub_renderer.get("simpleText")
-
-            videos.append(YouTubeVideo(
-                video_id=video_id,
-                title=title,
-                thumbnail_url=thumbnail_url,
-                published_at=published_text,
-            ))
-
-    except (KeyError, IndexError, TypeError) as e:
-        logger.error("Erreur navigation JSON YouTube : %s", e)
-
-    logger.info("YouTube: %d vidéos extraites", len(videos))
+    logger.info("[YT] RSS : %d vidéos extraites", len(videos))
     return videos

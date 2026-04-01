@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import {
-  Youtube,
+  Video,
   Plus,
   Trash2,
   ToggleLeft,
@@ -293,7 +293,7 @@ export default function VideosAdminPage() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-xl bg-red-50">
-                <Youtube size={18} className="text-[#DC2626]" />
+                <Video size={18} className="text-[#DC2626]" />
               </div>
               <div>
                 <h2 className="font-semibold text-gray-900 text-sm">Sources YouTube</h2>
