@@ -94,7 +94,7 @@ RÈGLES :
 
 # ────────────────────────── FONCTIONS PUBLIQUES ──────────────────────────
 
-def rewrite_content(
+async def rewrite_content(
     content_html: str,
     content_text: str,
     perspective: str = DEFAULT_PERSPECTIVE,
@@ -109,7 +109,7 @@ def rewrite_content(
 
 Réécris cet article INTÉGRALEMENT en HTML (h2, h3, p, strong, em). Garde toutes les infos factuelles mais reformule tout avec tes propres mots."""
 
-    result, used_ollama = _call_ollama(system, user_prompt, temperature=0.7)
+    result, used_ollama = await _call_ollama(system, user_prompt, temperature=0.7)
 
     if not result:
         # Fallback : retourne le contenu original nettoyé
