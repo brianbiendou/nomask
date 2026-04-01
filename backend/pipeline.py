@@ -68,7 +68,7 @@ async def process_single_article(
 
     # 2. Réécrire titre et contenu via Ollama
     print(f"  [IA] Réécriture du titre...")
-    new_title = rewrite_title(scraped.title, perspective)
+    new_title, title_ollama = rewrite_title(scraped.title, perspective)
     new_slug = generate_slug(new_title)
 
     # Vérifier si existe déjà
@@ -81,12 +81,12 @@ async def process_single_article(
             return None
 
     print(f"  [IA] Réécriture de l'extrait...")
-    new_excerpt = rewrite_excerpt(scraped.excerpt, perspective)
+    new_excerpt, excerpt_ollama = rewrite_excerpt(scraped.excerpt, perspective)
     print(f"  [IA] Réécriture du contenu (peut prendre ~1min)...")
     # Extraire les images du contenu original AVANT la réécriture
     original_image_blocks = extract_content_images(scraped.content_html)
     print(f"  {len(original_image_blocks)} images trouvées dans le contenu original")
-    new_content = rewrite_content(scraped.content_html, scraped.content_text, perspective)
+    new_content, content_ollama = rewrite_content(scraped.content_html, scraped.content_text, perspective)
     # Réinjecter les images originales dans le contenu réécrit
     if original_image_blocks:
         new_content = inject_images_into_content(new_content, original_image_blocks)
@@ -151,6 +151,15 @@ async def process_single_article(
         read_time=read_time,
         published_at=pub_date.isoformat(),
     )
+
+    # Ajouter les infos Ollama au résultat
+    ollama_used = title_ollama and excerpt_ollama and content_ollama
+    result["ollamaUsed"] = ollama_used
+    result["ollamaDetail"] = {
+        "title": title_ollama,
+        "excerpt": excerpt_ollama,
+        "content": content_ollama,
+    }
 
     return result
 

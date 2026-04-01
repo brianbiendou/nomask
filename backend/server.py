@@ -50,9 +50,41 @@ app.add_middleware(
 )
 
 # ────────────────────────────────────────
-# In-memory job store
+# Persistent job store (JSON file)
 # ────────────────────────────────────────
-jobs: dict[str, dict] = {}
+import json as _json
+from pathlib import Path as _Path
+
+_JOBS_FILE = _Path(__file__).parent / "jobs.json"
+_MAX_JOBS = 50
+
+
+def _load_jobs() -> dict[str, dict]:
+    """Charge les jobs depuis le fichier JSON."""
+    if _JOBS_FILE.exists():
+        try:
+            data = _json.loads(_JOBS_FILE.read_text(encoding="utf-8"))
+            return {j["id"]: j for j in data}
+        except (Exception):
+            pass
+    return {}
+
+
+def _save_jobs() -> None:
+    """Persiste les jobs dans le fichier JSON (max 50 plus récents)."""
+    sorted_list = sorted(
+        jobs.values(),
+        key=lambda j: j["createdAt"],
+        reverse=True,
+    )[:_MAX_JOBS]
+    _JOBS_FILE.write_text(
+        _json.dumps(sorted_list, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+
+# Charger les jobs au démarrage
+jobs: dict[str, dict] = _load_jobs()
 
 
 def _new_job(source_url: str, perspective: str, mode: str) -> dict:
@@ -77,6 +109,7 @@ def _new_job(source_url: str, perspective: str, mode: str) -> dict:
         "error": None,
     }
     jobs[job_id] = job
+    _save_jobs()
     return job
 
 
@@ -228,6 +261,8 @@ async def _run_pipeline_job(
             if i < len(job["articles"]):
                 job["articles"][i]["newTitle"] = res.get("title", "")
                 job["articles"][i]["status"] = "published"
+                job["articles"][i]["ollamaUsed"] = res.get("ollamaUsed", None)
+                job["articles"][i]["ollamaDetail"] = res.get("ollamaDetail", None)
                 published_count += 1
                 logger.debug(f"[JOB {job_id}] Article {i+1}: {res.get('title', 'N/A')[:60]}...")
 
@@ -242,12 +277,14 @@ async def _run_pipeline_job(
         logger.info(f"[JOB {job_id}] ✓ COMPLÉTÉ: {published_count}/{len(urls)} publiés")
 
         job["completedAt"] = datetime.now(timezone.utc).isoformat()
+        _save_jobs()
 
     except Exception as e:
         logger.error(f"[JOB {job_id}] ✗ ERREUR: {type(e).__name__}: {str(e)}", exc_info=True)
         job["status"] = "failed"
         job["error"] = str(e)
         job["completedAt"] = datetime.now(timezone.utc).isoformat()
+        _save_jobs()
 
 
 # ────────────────────────────────────────
@@ -334,6 +371,16 @@ async def pipeline_job(job_id: str):
     if not job:
         raise HTTPException(status_code=404, detail="Job non trouvé")
     return {"job": job}
+
+
+@app.delete("/api/pipeline/job/{job_id}")
+async def delete_pipeline_job(job_id: str):
+    """Supprimer un job."""
+    if job_id not in jobs:
+        raise HTTPException(status_code=404, detail="Job non trouvé")
+    del jobs[job_id]
+    _save_jobs()
+    return {"success": True}
 
 
 @app.get("/api/auto")

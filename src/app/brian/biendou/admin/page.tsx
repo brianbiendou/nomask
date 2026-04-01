@@ -13,6 +13,9 @@ import {
   Play,
   ArrowRight,
   Loader2,
+  Trash2,
+  Bot,
+  AlertTriangle,
 } from "lucide-react";
 
 interface Job {
@@ -20,7 +23,13 @@ interface Job {
   status: string;
   sourceUrl: string;
   mode: string;
-  articles: Array<{ title: string; status: string; newTitle?: string }>;
+  articles: Array<{
+    title: string;
+    status: string;
+    newTitle?: string;
+    ollamaUsed?: boolean;
+    ollamaDetail?: { title: boolean; excerpt: boolean; content: boolean };
+  }>;
   createdAt: string;
   completedAt?: string;
 }
@@ -63,6 +72,21 @@ export default function AdminDashboardPage() {
     }
     setLoading(false);
   }, []);
+
+  const deleteJob = async (jobId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      const res = await fetch(`/api/admin/pipeline/job/${jobId}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setJobs((prev) => prev.filter((j) => j.id !== jobId));
+      }
+    } catch {
+      // Silent
+    }
+  };
 
   useEffect(() => {
     fetchJobs();
@@ -198,6 +222,12 @@ export default function AdminDashboardPage() {
               const publishedCount = job.articles.filter(
                 (a) => a.status === "published"
               ).length;
+              const ollamaCount = job.articles.filter(
+                (a) => a.ollamaUsed === true
+              ).length;
+              const fallbackCount = job.articles.filter(
+                (a) => a.ollamaUsed === false
+              ).length;
 
               return (
                 <Link
@@ -241,10 +271,23 @@ export default function AdminDashboardPage() {
                       {publishedCount > 0 && (
                         <span className="text-green-600"> · {publishedCount} publié{publishedCount > 1 ? "s" : ""}</span>
                       )}
+                      {ollamaCount > 0 && (
+                        <span className="text-emerald-600"> · <Bot size={10} className="inline -mt-0.5" /> {ollamaCount} IA</span>
+                      )}
+                      {fallbackCount > 0 && (
+                        <span className="text-amber-600"> · <AlertTriangle size={10} className="inline -mt-0.5" /> {fallbackCount} fallback</span>
+                      )}
                     </p>
                   </div>
 
-                  {/* Arrow */}
+                  {/* Delete + Arrow */}
+                  <button
+                    onClick={(e) => deleteJob(job.id, e)}
+                    className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
+                    title="Supprimer"
+                  >
+                    <Trash2 size={14} />
+                  </button>
                   <ArrowRight
                     size={16}
                     className="text-gray-300 group-hover:text-gray-500 transition-colors"

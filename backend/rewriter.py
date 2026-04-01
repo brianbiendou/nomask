@@ -22,8 +22,8 @@ from config import (
 )
 
 
-def _call_ollama(system_prompt: str, user_prompt: str, temperature: float = 0.7) -> str:
-    """Appelle Ollama et retourne la réponse texte."""
+def _call_ollama(system_prompt: str, user_prompt: str, temperature: float = 0.7) -> tuple[str, bool]:
+    """Appelle Ollama et retourne (réponse texte, True si Ollama a répondu)."""
     try:
         resp = requests.post(
             f"{OLLAMA_BASE_URL}/api/generate",
@@ -41,13 +41,14 @@ def _call_ollama(system_prompt: str, user_prompt: str, temperature: float = 0.7)
             timeout=OLLAMA_TIMEOUT,
         )
         resp.raise_for_status()
-        return resp.json().get("response", "").strip()
+        text = resp.json().get("response", "").strip()
+        return (text, True) if text else ("", False)
     except requests.exceptions.ConnectionError:
         print("  [WARN] Ollama non disponible, réécriture structurelle utilisée.")
-        return ""
+        return "", False
     except Exception as e:
         print(f"  [WARN] Erreur Ollama: {e}")
-        return ""
+        return "", False
 
 
 # ────────────────────────── PROMPTS ──────────────────────────
@@ -95,8 +96,8 @@ def rewrite_content(
     content_html: str,
     content_text: str,
     perspective: str = DEFAULT_PERSPECTIVE,
-) -> str:
-    """Réécrit le contenu HTML via Ollama."""
+) -> tuple[str, bool]:
+    """Réécrit le contenu HTML via Ollama. Retourne (contenu, used_ollama)."""
     system = SYSTEM_REWRITE_CONTENT.format(perspective=perspective)
 
     # On envoie le texte brut pour éviter la confusion avec le HTML source
@@ -106,11 +107,11 @@ def rewrite_content(
 
 Réécris cet article INTÉGRALEMENT en HTML (h2, h3, p, strong, em). Garde toutes les infos factuelles mais reformule tout avec tes propres mots."""
 
-    result = _call_ollama(system, user_prompt, temperature=0.7)
+    result, used_ollama = _call_ollama(system, user_prompt, temperature=0.7)
 
     if not result:
         # Fallback : retourne le contenu original nettoyé
-        return content_html
+        return content_html, False
 
     # Nettoie le résultat (enlève les blocs code markdown si présents)
     result = re.sub(r'^```html?\s*\n?', '', result)
@@ -123,42 +124,38 @@ Réécris cet article INTÉGRALEMENT en HTML (h2, h3, p, strong, em). Garde tout
         paragraphs = result.split("\n\n")
         result = "".join(f"<p>{p.strip()}</p>" for p in paragraphs if p.strip())
 
-    return result
+    return result, True
 
 
-def rewrite_title(title: str, perspective: str = DEFAULT_PERSPECTIVE) -> str:
-    """Réécrit le titre via Ollama."""
+def rewrite_title(title: str, perspective: str = DEFAULT_PERSPECTIVE) -> tuple[str, bool]:
+    """Réécrit le titre via Ollama. Retourne (titre, used_ollama)."""
     system = SYSTEM_REWRITE_TITLE.format(perspective=perspective)
     user_prompt = f"Titre original : {title}"
 
-    result = _call_ollama(system, user_prompt, temperature=0.8)
+    result, used_ollama = _call_ollama(system, user_prompt, temperature=0.8)
 
     if not result:
-        return title
+        return title, False
 
-    # Nettoie : enlève guillemets, sauts de ligne, etc.
     result = result.strip().strip('"').strip("'").strip("«").strip("»")
-    # Prend seulement la première ligne
     result = result.split("\n")[0].strip()
 
-    # Si trop long ou vide, fallback
     if len(result) > 150 or len(result) < 10:
-        return title
+        return title, False
 
-    return result
+    return result, True
 
 
-def rewrite_excerpt(excerpt: str, perspective: str = DEFAULT_PERSPECTIVE) -> str:
-    """Réécrit l'extrait via Ollama."""
+def rewrite_excerpt(excerpt: str, perspective: str = DEFAULT_PERSPECTIVE) -> tuple[str, bool]:
+    """Réécrit l'extrait via Ollama. Retourne (extrait, used_ollama)."""
     system = SYSTEM_REWRITE_EXCERPT.format(perspective=perspective)
     user_prompt = f"Chapô original : {excerpt}"
 
-    result = _call_ollama(system, user_prompt, temperature=0.7)
+    result, used_ollama = _call_ollama(system, user_prompt, temperature=0.7)
 
     if not result:
-        return excerpt
+        return excerpt, False
 
-    # Nettoie
     result = result.strip().strip('"').strip("'")
     result = result.split("\n")[0].strip()
 
@@ -166,9 +163,9 @@ def rewrite_excerpt(excerpt: str, perspective: str = DEFAULT_PERSPECTIVE) -> str
         result = result[:297] + "..."
 
     if len(result) < 20:
-        return excerpt
+        return excerpt, False
 
-    return result
+    return result, True
 
 
 def generate_slug(title: str) -> str:
