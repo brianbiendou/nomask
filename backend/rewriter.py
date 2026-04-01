@@ -172,3 +172,61 @@ def generate_slug(title: str) -> str:
     """Génère un slug unique à partir du titre."""
     base_slug = slugify(title, max_length=80)
     return base_slug
+
+
+# ────────────────────────── CLASSIFICATION IA ──────────────────────────
+
+SYSTEM_CLASSIFY = """Tu es un classificateur d'articles de presse francophone. Tu dois déterminer la catégorie d'un article parmi cette liste EXACTE :
+
+- politique (politique française, internationale, diplomatie, lois, gouvernement)
+- economie (entreprises, marchés, finance, emploi, immobilier, commerce)
+- societe (fait divers, justice, éducation, santé, environnement, immigration)
+- tech (technologie, smartphones, cybersécurité, IA, informatique, internet, réseaux sociaux)
+- culture (cinéma, musique, jeux vidéo, livres, art, streaming, séries, divertissement)
+- science (espace, recherche, astronomie, physique, biologie, médecine)
+- sport (football, tennis, F1, JO, basket, rugby, tous les sports)
+- style (mode, beauté, luxe, lifestyle, gastronomie, voyage, tendances)
+
+RÈGLES :
+- Réponds UNIQUEMENT avec le slug de la catégorie (un seul mot, en minuscules)
+- Si tu hésites entre deux catégories, choisis la plus spécifique
+- Un article sur TotalEnergies et Washington = economie (accord commercial)
+- Un article sur une loi tech = politique (c'est législatif)
+- Un article sur l'IA DeepMind = tech (technologie)
+- Un article sur SpaceX / fusée = science (espace)"""
+
+
+def classify_article(title: str, excerpt: str, content_text: str = "") -> tuple[str, bool]:
+    """Classifie un article via Ollama. Retourne (slug_catégorie, used_ollama).
+
+    Le content_text peut être tronqué pour limiter le contexte.
+    """
+    VALID_CATEGORIES = {"politique", "economie", "societe", "tech", "culture", "science", "sport", "style"}
+
+    user_prompt = f"""Classe cet article dans une catégorie :
+
+Titre : {title}
+Extrait : {excerpt[:300]}
+Début du contenu : {content_text[:500]}
+
+Catégorie (un seul mot) :"""
+
+    result, used_ollama = _call_ollama(SYSTEM_CLASSIFY, user_prompt, temperature=0.1)
+
+    if not result:
+        return "", False
+
+    # Nettoyer la réponse
+    cat = result.strip().lower().split("\n")[0].strip().strip('"').strip("'")
+    # Enlever tout ce qui n'est pas le slug
+    cat = re.sub(r'[^a-z]', '', cat)
+
+    if cat in VALID_CATEGORIES:
+        return cat, True
+
+    # Tentative de matching partiel
+    for valid in VALID_CATEGORIES:
+        if valid in cat or cat in valid:
+            return valid, True
+
+    return "", False

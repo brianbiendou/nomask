@@ -28,7 +28,7 @@ logger = logging.getLogger("nomask")
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-from pipeline import run_pipeline, process_single_article, is_url_already_processed
+from pipeline import run_pipeline, process_single_article, is_url_already_processed, clear_processed_urls
 from discovery import discover_and_return_urls, discover_trending, discover_trending_multi, SITE_PROFILES
 from config import DEFAULT_PERSPECTIVE, OLLAMA_MODEL, OLLAMA_BASE_URL
 from scraper import scrape_batch
@@ -491,6 +491,13 @@ async def trending_sources():
             "url": f"https://www.{domain}",
         })
     return {"sources": sources}
+
+
+@app.post("/api/pipeline/clear-cache")
+async def pipeline_clear_cache():
+    """Vide le registre des URLs déjà traitées (processed_urls.json)."""
+    count = clear_processed_urls()
+    return {"success": True, "cleared": count}
 
 
 # ────────────────────────────────────────

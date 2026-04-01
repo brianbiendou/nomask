@@ -10,9 +10,9 @@ import {
   Image,
   Link2,
   Clock,
-  Star,
-  Zap,
+  Trash2,
   Filter,
+  Loader2,
 } from "lucide-react";
 
 interface ArticleStat {
@@ -70,6 +70,21 @@ export default function ArticlesStatsPage() {
   const [categoryFilter, setCategoryFilter] = useState("");
 
   const isComputedSort = COMPUTED_FIELDS.includes(sortField);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+
+  const handleDelete = async (id: string) => {
+    setDeleting(id);
+    try {
+      const res = await fetch(`/api/admin/articles/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Erreur suppression");
+      setConfirmDelete(null);
+      fetchArticles();
+    } catch {
+      alert("Erreur lors de la suppression");
+    }
+    setDeleting(null);
+  };
 
   const fetchArticles = useCallback(async () => {
     setLoading(true);
@@ -283,7 +298,7 @@ export default function ArticlesStatsPage() {
                     </button>
                   </th>
                   <th className="text-center px-3 py-3 font-medium text-gray-500">
-                    Flags
+                    <Trash2 size={14} className="mx-auto text-gray-400" />
                   </th>
                 </tr>
               </thead>
@@ -351,27 +366,31 @@ export default function ArticlesStatsPage() {
                       </span>
                     </td>
                     <td className="px-3 py-3 text-center">
-                      <div className="flex items-center justify-center gap-1">
-                        {article.is_featured && (
-                          <span title="À la une">
-                            <Star
-                              size={14}
-                              className="text-yellow-500 fill-yellow-500"
-                            />
-                          </span>
-                        )}
-                        {article.is_breaking && (
-                          <span title="Breaking">
-                            <Zap
-                              size={14}
-                              className="text-red-500 fill-red-500"
-                            />
-                          </span>
-                        )}
-                        {!article.is_featured && !article.is_breaking && (
-                          <span className="text-gray-300">—</span>
-                        )}
-                      </div>
+                      {confirmDelete === article.id ? (
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={() => handleDelete(article.id)}
+                            disabled={deleting === article.id}
+                            className="px-2 py-0.5 bg-red-600 text-white rounded text-[10px] font-medium hover:bg-red-700 disabled:opacity-50"
+                          >
+                            {deleting === article.id ? <Loader2 size={10} className="animate-spin" /> : "Oui"}
+                          </button>
+                          <button
+                            onClick={() => setConfirmDelete(null)}
+                            className="px-2 py-0.5 bg-gray-200 text-gray-600 rounded text-[10px] font-medium hover:bg-gray-300"
+                          >
+                            Non
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmDelete(article.id)}
+                          className="p-1.5 rounded-lg hover:bg-red-50 text-gray-300 hover:text-red-500 transition-colors"
+                          title="Supprimer cet article"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}

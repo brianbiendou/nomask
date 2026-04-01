@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 
 from scraper import ScrapedArticle, scrape_batch
 from image_handler import process_images, replace_image_urls, ensure_bucket_exists, extract_content_images, inject_images_into_content
-from rewriter import rewrite_content, rewrite_title, rewrite_excerpt, generate_slug
+from rewriter import rewrite_content, rewrite_title, rewrite_excerpt, generate_slug, classify_article
 from publisher import (
     get_categories,
     get_authors,
@@ -68,6 +68,14 @@ def mark_url_processed(url: str, source_domain: str = "") -> None:
     _save_processed_urls(data)
 
 
+def clear_processed_urls() -> int:
+    """Vide entièrement le registre des URLs traitées. Retourne le nombre supprimé."""
+    data = _load_processed_urls()
+    count = len(data)
+    _save_processed_urls({})
+    return count
+
+
 # Mapping catégories scrappées → slug catégorie Supabase
 CATEGORY_MAP = {
     "tech": "tech",
@@ -115,12 +123,23 @@ async def process_single_article(
         print(f"  [SKIP] URL source déjà traitée: {scraped.url}")
         return None
 
-    # 1. Déterminer la catégorie
-    cat_slug = CATEGORY_MAP.get(scraped.category_hint or "", "tech")
-    if cat_slug not in categories:
-        cat_slug = "tech"  # Fallback
-    category_id = categories[cat_slug]
-    print(f"  Catégorie: {cat_slug}")
+    # 1. Déterminer la catégorie — d'abord par métadonnées/URL, puis classification IA
+    cat_slug = CATEGORY_MAP.get(scraped.category_hint or "", "")
+    if cat_slug and cat_slug in categories:
+        category_id = categories[cat_slug]
+        print(f"  Catégorie (métadonnées): {cat_slug}")
+    else:
+        # Classification IA via Ollama
+        print(f"  [IA] Classification de l'article...")
+        ai_cat, ai_used = classify_article(scraped.title, scraped.excerpt, scraped.content_text)
+        if ai_used and ai_cat in categories:
+            cat_slug = ai_cat
+            category_id = categories[cat_slug]
+            print(f"  Catégorie (IA): {cat_slug}")
+        else:
+            cat_slug = "tech"  # Fallback ultime
+            category_id = categories[cat_slug]
+            print(f"  Catégorie (fallback): {cat_slug}")
 
     # 2. Réécrire titre et contenu via Ollama
     print(f"  [IA] Réécriture du titre...")
@@ -148,6 +167,14 @@ async def process_single_article(
         new_content = inject_images_into_content(new_content, original_image_blocks)
         print(f"  Images réinjectées dans le contenu réécrit")
     print(f"  Nouveau titre: {new_title[:70]}...")
+
+    # 2b. Re-classification IA si la catégorie venait du fallback URL
+    if not CATEGORY_MAP.get(scraped.category_hint or "", ""):
+        ai_cat2, ai_used2 = classify_article(new_title, new_excerpt, scraped.content_text)
+        if ai_used2 and ai_cat2 in categories and ai_cat2 != cat_slug:
+            cat_slug = ai_cat2
+            category_id = categories[cat_slug]
+            print(f"  Catégorie corrigée (IA post-réécriture): {cat_slug}")
 
     # 3. Traiter les images en parallèle
     print(f"  Traitement de {len(scraped.image_urls)} images...")

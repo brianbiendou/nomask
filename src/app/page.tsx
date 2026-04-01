@@ -66,6 +66,12 @@ export default async function HomePage() {
   // Toute l'actualité : le reste (encore non utilisé)
   const allNewsArticles = latestArticles.filter((a) => !usedIds.has(a.id));
 
+  // Colonnes thématiques : filtrer les articles déjà utilisés
+  const filteredTechArticles = techArticles.filter((a) => !usedIds.has(a.id));
+  const filteredSportArticles = sportArticles.filter((a) => !usedIds.has(a.id));
+  const filteredEconomieArticles = economieArticles.filter((a) => !usedIds.has(a.id));
+  const filteredBuyingGuides = buyingGuides.filter((a) => !usedIds.has(a.id));
+
   // Trending : toujours les articles les plus récents (dynamique à chaque publication)
   const trendingTopics = latestArticles
     .slice(0, 5)
@@ -478,19 +484,19 @@ export default async function HomePage() {
               title="sport"
               icon={<svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="m4.93 4.93 4.24 4.24" /><path d="m14.83 9.17 4.24-4.24" /><path d="m14.83 14.83 4.24 4.24" /><path d="m9.17 14.83-4.24 4.24" /><circle cx="12" cy="12" r="4" /></svg>}
               slug="sport"
-              articles={sportArticles}
+              articles={filteredSportArticles}
             />
             <ThemeColumn
               title="économie"
               icon={<svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>}
               slug="economie"
-              articles={economieArticles}
+              articles={filteredEconomieArticles}
             />
             <ThemeColumn
               title="sciences"
               icon={<svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a4 4 0 0 0-4 4c0 4 4 6 4 6s4-2 4-6a4 4 0 0 0-4-4z" /><path d="M12 12v10" /><path d="M8 18c-2 0-4-1-4-3 0-1.5 1.5-3 4-3" /><path d="M16 18c2 0 4-1 4-3 0-1.5-1.5-3-4-3" /></svg>}
               slug="tech"
-              articles={techArticles}
+              articles={filteredTechArticles}
             />
           </div>
         </div>
@@ -593,7 +599,7 @@ export default async function HomePage() {
             </Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
-            {buyingGuides.slice(0, 4).map((article) => (
+            {filteredBuyingGuides.slice(0, 4).map((article) => (
               <Link
                 key={article.id}
                 href={`/${article.category?.slug}/${article.slug}`}
