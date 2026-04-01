@@ -386,23 +386,35 @@ export async function getYouTubeCurrentVideos(): Promise<Record<string, YouTubeV
 
   const rotationMin = cfgData?.rotation_minutes ?? 120;
 
-  // 2. Charger les sources actives
+  // 2. Charger les sources actives, triées par slot_position
+  const SLOT_ORDER = ["main", "bottom_left", "bottom_right"];
   const { data: sources } = await supabase
     .from("youtube_sources")
     .select("id, name, slot_position")
-    .eq("enabled", true)
-    .order("created_at");
+    .eq("enabled", true);
 
   if (!sources || sources.length === 0) return { main: null, bottom_left: null, bottom_right: null };
+
+  // Trier par slot_position : main → bottom_left → bottom_right → reste
+  sources.sort((a, b) => {
+    const ai = SLOT_ORDER.indexOf(a.slot_position);
+    const bi = SLOT_ORDER.indexOf(b.slot_position);
+    return (ai === -1 ? 100 : ai) - (bi === -1 ? 100 : bi);
+  });
+
+  // Les 3 premiers dans l'ordre trié prennent les slots main, bottom_left, bottom_right
+  const SLOT_KEYS = ["main", "bottom_left", "bottom_right"] as const;
 
   // 3. Index de rotation basé sur le temps
   const nowTs = Math.floor(Date.now() / 1000);
   const rotationIndex = Math.floor(nowTs / (rotationMin * 60));
 
-  // 4. Pour chaque source, récupérer ses vidéos et sélectionner la courante
+  // 4. Pour chaque source (max 3), récupérer ses vidéos et assigner au slot correspondant
   const result: Record<string, YouTubeVideoSlot | null> = { main: null, bottom_left: null, bottom_right: null };
 
-  for (const src of sources) {
+  for (let i = 0; i < Math.min(sources.length, 3); i++) {
+    const src = sources[i];
+    const slotKey = SLOT_KEYS[i];
     const { data: videos } = await supabase
       .from("youtube_videos")
       .select("video_id, title, thumbnail_url")
@@ -414,7 +426,7 @@ export async function getYouTubeCurrentVideos(): Promise<Record<string, YouTubeV
     const idx = rotationIndex % videos.length;
     const v = videos[idx];
 
-    result[src.slot_position] = {
+    result[slotKey] = {
       source_name: src.name,
       video_id: v.video_id,
       title: v.title,

@@ -16,6 +16,9 @@ import {
   Image,
   Play,
   X,
+  ChevronUp,
+  ChevronDown,
+  GripVertical,
 } from "lucide-react";
 
 interface YouTubeSource {
@@ -41,11 +44,13 @@ interface TestVideo {
   published_at: string;
 }
 
-const SLOT_LABELS: Record<string, string> = {
-  main: "Principal (grande vidéo)",
-  bottom_left: "Bas gauche",
-  bottom_right: "Bas droite",
+const SLOT_LABELS: Record<number, { label: string; color: string }> = {
+  0: { label: "Principal (grande vidéo)", color: "bg-red-100 text-red-700" },
+  1: { label: "Bas gauche", color: "bg-blue-100 text-blue-700" },
+  2: { label: "Bas droite", color: "bg-purple-100 text-purple-700" },
 };
+
+const ALL_HOURS = Array.from({ length: 24 }, (_, i) => i);
 
 export default function VideosAdminPage() {
   const [sources, setSources] = useState<YouTubeSource[]>([]);
@@ -60,12 +65,12 @@ export default function VideosAdminPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reordering, setReordering] = useState(false);
 
   // Add form
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState("");
   const [newUrl, setNewUrl] = useState("");
-  const [newSlot, setNewSlot] = useState("main");
   const [newCount, setNewCount] = useState(10);
 
   // Test modal
@@ -124,14 +129,13 @@ export default function VideosAdminPage() {
         body: JSON.stringify({
           name: newName,
           channel_url: newUrl,
-          slot_position: newSlot,
+          slot_position: "reserve",
           video_count: newCount,
         }),
       });
       if (!res.ok) throw new Error("Erreur ajout");
       setNewName("");
       setNewUrl("");
-      setNewSlot("main");
       setNewCount(10);
       setShowAdd(false);
       fetchData();
@@ -154,6 +158,29 @@ export default function VideosAdminPage() {
       });
       fetchData();
     } catch { /* silent */ }
+  };
+
+  const handleMoveSource = async (index: number, direction: "up" | "down") => {
+    const newIndex = direction === "up" ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= sources.length) return;
+
+    setReordering(true);
+    const reordered = [...sources];
+    [reordered[index], reordered[newIndex]] = [reordered[newIndex], reordered[index]];
+    setSources(reordered);
+
+    try {
+      const res = await fetch("/api/admin/youtube/reorder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ order: reordered.map((s) => s.id) }),
+      });
+      if (!res.ok) throw new Error("Erreur réordonnement");
+      await fetchData();
+    } catch {
+      await fetchData();
+    }
+    setReordering(false);
   };
 
   const handleRefreshNow = async () => {
@@ -193,6 +220,17 @@ export default function VideosAdminPage() {
       setTestError(e instanceof Error ? e.message : "Erreur réseau");
     }
     setTestLoading(false);
+  };
+
+  const toggleHour = (hour: number) => {
+    const hours = config.refresh_hours.includes(hour)
+      ? config.refresh_hours.filter((h) => h !== hour)
+      : [...config.refresh_hours, hour].sort((a, b) => a - b);
+    setConfig({ ...config, refresh_hours: hours });
+  };
+
+  const getSlotInfo = (index: number) => {
+    return SLOT_LABELS[index] ?? { label: "En réserve", color: "bg-gray-100 text-gray-500" };
   };
 
   if (loading) {
@@ -278,47 +316,54 @@ export default function VideosAdminPage() {
             </div>
           </div>
 
-          {config.enabled && (
-            <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1.5">
-                  Heures de refresh (UTC)
-                </label>
-                <input
-                  type="text"
-                  value={config.refresh_hours.join(", ")}
-                  onChange={(e) => {
-                    const hours = e.target.value
-                      .split(",")
-                      .map((h) => parseInt(h.trim()))
-                      .filter((h) => !isNaN(h) && h >= 0 && h <= 23);
-                    setConfig({ ...config, refresh_hours: hours });
-                  }}
-                  placeholder="6, 21"
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm
-                    focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626] outline-none"
-                />
-                <p className="text-[10px] text-gray-400 mt-1">Ex: 6, 21 pour 6h et 21h UTC</p>
+          {/* Hour picker + rotation (always visible) */}
+          <div className="mt-4 pt-4 border-t border-gray-100 space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-2">
+                Heures de refresh (UTC) — cliquez pour activer/désactiver
+              </label>
+              <div className="grid grid-cols-12 gap-1.5">
+                {ALL_HOURS.map((h) => {
+                  const active = config.refresh_hours.includes(h);
+                  return (
+                    <button
+                      key={h}
+                      onClick={() => toggleHour(h)}
+                      className={`py-1.5 rounded-lg text-xs font-medium transition-all ${
+                        active
+                          ? "bg-[#DC2626] text-white shadow-sm"
+                          : "bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600 border border-gray-100"
+                      }`}
+                    >
+                      {h}h
+                    </button>
+                  );
+                })}
               </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1.5">
-                  Rotation (minutes)
-                </label>
-                <input
-                  type="number"
-                  value={config.rotation_minutes}
-                  onChange={(e) => setConfig({ ...config, rotation_minutes: parseInt(e.target.value) || 120 })}
-                  min={10}
-                  max={1440}
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm
-                    focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626] outline-none"
-                />
-                <p className="text-[10px] text-gray-400 mt-1">120 min = rotation toutes les 2h</p>
-              </div>
+              <p className="text-[10px] text-gray-400 mt-1.5">
+                {config.refresh_hours.length === 0
+                  ? "Aucune heure sélectionnée"
+                  : `Refresh à ${config.refresh_hours.map((h) => `${h}h`).join(", ")} UTC`}
+              </p>
             </div>
-          )}
+            <div className="max-w-xs">
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                Rotation (minutes)
+              </label>
+              <input
+                type="number"
+                value={config.rotation_minutes}
+                onChange={(e) => setConfig({ ...config, rotation_minutes: parseInt(e.target.value) || 120 })}
+                min={10}
+                max={1440}
+                className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm
+                  focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626] outline-none"
+              />
+              <p className="text-[10px] text-gray-400 mt-1">120 min = rotation toutes les 2h</p>
+            </div>
+          </div>
 
-          {refreshRunning && (
+          {config.enabled && refreshRunning && (
             <div className="mt-3 pt-3 border-t border-gray-100">
               <p className="text-[11px] text-green-600 flex items-center gap-1">
                 <Loader2 size={12} className="animate-spin" />
@@ -338,7 +383,7 @@ export default function VideosAdminPage() {
               <div>
                 <h2 className="font-semibold text-gray-900 text-sm">Sources YouTube</h2>
                 <p className="text-xs text-gray-500">
-                  {sources.length} source{sources.length > 1 ? "s" : ""} — 3 emplacements sur la landing page
+                  {sources.length} source{sources.length > 1 ? "s" : ""} — les 3 premières s&apos;affichent sur la landing page
                 </p>
               </div>
             </div>
@@ -355,6 +400,9 @@ export default function VideosAdminPage() {
           {/* Add form */}
           {showAdd && (
             <div className="mb-4 p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-3">
+              <p className="text-[10px] text-gray-400 -mt-1">
+                La nouvelle source sera ajoutée en réserve. Utilisez les flèches pour la placer dans un emplacement actif.
+              </p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Nom</label>
@@ -379,32 +427,17 @@ export default function VideosAdminPage() {
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Emplacement</label>
-                  <select
-                    value={newSlot}
-                    onChange={(e) => setNewSlot(e.target.value)}
-                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none
-                      focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626]"
-                  >
-                    {Object.entries(SLOT_LABELS).map(([k, v]) => (
-                      <option key={k} value={k}>{v}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Nombre de vidéos</label>
-                  <input
-                    type="number"
-                    value={newCount}
-                    onChange={(e) => setNewCount(parseInt(e.target.value) || 10)}
-                    min={1}
-                    max={50}
-                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none
-                      focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626]"
-                  />
-                </div>
+              <div className="max-w-xs">
+                <label className="block text-xs font-medium text-gray-600 mb-1">Nombre de vidéos à récupérer</label>
+                <input
+                  type="number"
+                  value={newCount}
+                  onChange={(e) => setNewCount(parseInt(e.target.value) || 10)}
+                  min={1}
+                  max={50}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none
+                    focus:ring-2 focus:ring-[#DC2626]/20 focus:border-[#DC2626]"
+                />
               </div>
               <div className="flex gap-2 pt-1">
                 <button
@@ -433,66 +466,97 @@ export default function VideosAdminPage() {
 
           {/* Sources list */}
           <div className="space-y-2">
-            {sources.map((src) => (
-              <div
-                key={src.id}
-                className={`flex items-center gap-4 p-4 rounded-xl border transition-colors ${
-                  src.enabled ? "bg-white border-gray-100" : "bg-gray-50 border-gray-100 opacity-60"
-                }`}
-              >
-                {/* Icon */}
-                <div className="p-2 rounded-lg bg-red-50 flex-shrink-0">
-                  <Image size={16} className="text-[#DC2626]" />
-                </div>
-
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm text-gray-900 truncate">{src.name}</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 font-medium">
-                      {SLOT_LABELS[src.slot_position] ?? src.slot_position}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <a
-                      href={src.channel_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-gray-400 hover:text-[#DC2626] flex items-center gap-1 truncate"
+            {sources.map((src, index) => {
+              const slot = getSlotInfo(index);
+              const isActive = index < 3;
+              return (
+                <div
+                  key={src.id}
+                  className={`flex items-center gap-3 p-4 rounded-xl border transition-colors ${
+                    !src.enabled
+                      ? "bg-gray-50 border-gray-100 opacity-50"
+                      : isActive
+                      ? "bg-white border-gray-200 shadow-sm"
+                      : "bg-gray-50/50 border-gray-100"
+                  }`}
+                >
+                  {/* Position + Arrows */}
+                  <div className="flex flex-col items-center gap-0.5 flex-shrink-0 w-8">
+                    <button
+                      onClick={() => handleMoveSource(index, "up")}
+                      disabled={index === 0 || reordering}
+                      title="Monter"
+                      className="p-0.5 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600 disabled:opacity-20 disabled:hover:bg-transparent transition-colors"
                     >
-                      {src.channel_url}
-                      <ExternalLink size={10} />
-                    </a>
-                    <span className="text-[10px] text-gray-400">•</span>
-                    <span className="text-[10px] text-gray-400">{src.video_count} vidéos</span>
+                      <ChevronUp size={14} />
+                    </button>
+                    <span className="text-xs font-bold text-gray-400 select-none">
+                      <GripVertical size={14} className="text-gray-300" />
+                    </span>
+                    <button
+                      onClick={() => handleMoveSource(index, "down")}
+                      disabled={index === sources.length - 1 || reordering}
+                      title="Descendre"
+                      className="p-0.5 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600 disabled:opacity-20 disabled:hover:bg-transparent transition-colors"
+                    >
+                      <ChevronDown size={14} />
+                    </button>
+                  </div>
+
+                  {/* Icon */}
+                  <div className={`p-2 rounded-lg flex-shrink-0 ${isActive ? "bg-red-50" : "bg-gray-100"}`}>
+                    <Image size={16} className={isActive ? "text-[#DC2626]" : "text-gray-400"} />
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-sm text-gray-900 truncate">{src.name}</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${slot.color}`}>
+                        {slot.label}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <a
+                        href={src.channel_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-gray-400 hover:text-[#DC2626] flex items-center gap-1 truncate"
+                      >
+                        {src.channel_url}
+                        <ExternalLink size={10} />
+                      </a>
+                      <span className="text-[10px] text-gray-400">•</span>
+                      <span className="text-[10px] text-gray-400">{src.video_count} vidéos</span>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button
+                      onClick={() => handleTestSource(src.channel_url, src.name, src.video_count)}
+                      className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors"
+                      title="Tester la récupération"
+                    >
+                      <Play size={14} />
+                    </button>
+                    <button onClick={() => handleToggleSource(src)} title={src.enabled ? "Désactiver" : "Activer"}>
+                      {src.enabled ? (
+                        <ToggleRight size={22} className="text-[#DC2626]" />
+                      ) : (
+                        <ToggleLeft size={22} className="text-gray-300" />
+                      )}
+                    </button>
+                    <button
+                      onClick={() => handleDeleteSource(src.id)}
+                      className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-[#DC2626] transition-colors"
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   </div>
                 </div>
-
-                {/* Actions */}
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <button
-                    onClick={() => handleTestSource(src.channel_url, src.name, src.video_count)}
-                    className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors"
-                    title="Tester la récupération"
-                  >
-                    <Play size={14} />
-                  </button>
-                  <button onClick={() => handleToggleSource(src)}>
-                    {src.enabled ? (
-                      <ToggleRight size={22} className="text-[#DC2626]" />
-                    ) : (
-                      <ToggleLeft size={22} className="text-gray-300" />
-                    )}
-                  </button>
-                  <button
-                    onClick={() => handleDeleteSource(src.id)}
-                    className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-[#DC2626] transition-colors"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
 
             {sources.length === 0 && (
               <div className="text-center py-8 text-gray-400 text-sm">
@@ -522,6 +586,7 @@ export default function VideosAdminPage() {
               </div>
               <button
                 onClick={() => setTestModal(false)}
+                title="Fermer"
                 className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
               >
                 <X size={18} />

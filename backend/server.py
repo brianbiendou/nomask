@@ -597,11 +597,19 @@ async def yt_config_set(body: YouTubeConfigUpdate):
 
 
 # --- Sources CRUD ---
+SLOT_ORDER = ["main", "bottom_left", "bottom_right"]
+
 @app.get("/api/youtube/sources")
 async def yt_sources_list():
-    """Lister les sources YouTube."""
+    """Lister les sources YouTube, triées par slot puis created_at."""
     res = _yt_supabase.table("youtube_sources").select("*").order("created_at").execute()
-    return {"sources": res.data}
+    # Trier : slots assignés d'abord (main=0, bottom_left=1, bottom_right=2), puis le reste
+    sources = res.data or []
+    def sort_key(s):
+        pos = s.get("slot_position", "")
+        return (SLOT_ORDER.index(pos) if pos in SLOT_ORDER else 100, s.get("created_at", ""))
+    sources.sort(key=sort_key)
+    return {"sources": sources}
 
 
 @app.post("/api/youtube/sources")
@@ -610,8 +618,28 @@ async def yt_sources_create(body: YouTubeSourceCreate):
     payload = body.model_dump()
     payload["created_at"] = datetime.now(timezone.utc).isoformat()
     payload["updated_at"] = datetime.now(timezone.utc).isoformat()
+    # slot_position par défaut : "reserve" pour les nouvelles sources
+    if payload.get("slot_position") not in SLOT_ORDER:
+        payload["slot_position"] = "reserve"
     res = _yt_supabase.table("youtube_sources").insert(payload).execute()
     return {"success": True, "source": res.data[0] if res.data else payload}
+
+
+@app.post("/api/youtube/sources/reorder")
+async def yt_sources_reorder(body: dict):
+    """Réordonner les sources YouTube. Body: { order: [id1, id2, id3, ...] }."""
+    order = body.get("order", [])
+    if not order:
+        raise HTTPException(status_code=400, detail="order est requis")
+
+    for i, source_id in enumerate(order):
+        slot = SLOT_ORDER[i] if i < len(SLOT_ORDER) else "reserve"
+        _yt_supabase.table("youtube_sources").update({
+            "slot_position": slot,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }).eq("id", source_id).execute()
+
+    return {"success": True}
 
 
 @app.put("/api/youtube/sources/{source_id}")
