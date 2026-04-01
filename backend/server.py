@@ -537,3 +537,238 @@ async def save_sources(payload: SourcesPayload):
     """Sauvegarder la liste des sources."""
     _save_sources(payload.sources)
     return {"success": True, "sources": payload.sources}
+
+
+# ────────────────────────────────────────
+# YouTube Videos — sources, cache, rotation
+# ────────────────────────────────────────
+from youtube_scraper import fetch_channel_videos
+from supabase import create_client
+from config import SUPABASE_URL, SUPABASE_SERVICE_KEY
+
+_yt_supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+_yt_refresh_task: Optional[asyncio.Task] = None
+
+
+# --- Schemas ---
+class YouTubeSourceCreate(BaseModel):
+    name: str
+    channel_url: str
+    slot_position: str = "main"          # main | bottom_left | bottom_right
+    video_count: int = 10
+
+
+class YouTubeSourceUpdate(BaseModel):
+    name: Optional[str] = None
+    channel_url: Optional[str] = None
+    slot_position: Optional[str] = None
+    video_count: Optional[int] = None
+    enabled: Optional[bool] = None
+
+
+class YouTubeConfigUpdate(BaseModel):
+    enabled: Optional[bool] = None
+    refresh_hours: Optional[list[int]] = None
+    rotation_minutes: Optional[int] = None
+
+
+# --- Config ---
+@app.get("/api/youtube/config")
+async def yt_config_get():
+    """Lire la config YouTube."""
+    res = _yt_supabase.table("youtube_config").select("*").eq("id", 1).execute()
+    cfg = res.data[0] if res.data else {"enabled": False, "refresh_hours": [6, 21], "rotation_minutes": 120}
+    return {
+        "config": cfg,
+        "refreshRunning": _yt_refresh_task is not None and not _yt_refresh_task.done() if _yt_refresh_task else False,
+    }
+
+
+@app.post("/api/youtube/config")
+async def yt_config_set(body: YouTubeConfigUpdate):
+    """Mettre à jour la config YouTube."""
+    updates = {k: v for k, v in body.model_dump().items() if v is not None}
+    updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+    _yt_supabase.table("youtube_config").upsert({"id": 1, **updates}).execute()
+    # Redémarrer la boucle si nécessaire
+    _restart_yt_refresh()
+    res = _yt_supabase.table("youtube_config").select("*").eq("id", 1).execute()
+    return {"success": True, "config": res.data[0] if res.data else {}}
+
+
+# --- Sources CRUD ---
+@app.get("/api/youtube/sources")
+async def yt_sources_list():
+    """Lister les sources YouTube."""
+    res = _yt_supabase.table("youtube_sources").select("*").order("created_at").execute()
+    return {"sources": res.data}
+
+
+@app.post("/api/youtube/sources")
+async def yt_sources_create(body: YouTubeSourceCreate):
+    """Ajouter une source YouTube."""
+    payload = body.model_dump()
+    payload["created_at"] = datetime.now(timezone.utc).isoformat()
+    payload["updated_at"] = datetime.now(timezone.utc).isoformat()
+    res = _yt_supabase.table("youtube_sources").insert(payload).execute()
+    return {"success": True, "source": res.data[0] if res.data else payload}
+
+
+@app.put("/api/youtube/sources/{source_id}")
+async def yt_sources_update(source_id: str, body: YouTubeSourceUpdate):
+    """Modifier une source YouTube."""
+    updates = {k: v for k, v in body.model_dump().items() if v is not None}
+    updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+    res = _yt_supabase.table("youtube_sources").update(updates).eq("id", source_id).execute()
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Source introuvable")
+    return {"success": True, "source": res.data[0]}
+
+
+@app.delete("/api/youtube/sources/{source_id}")
+async def yt_sources_delete(source_id: str):
+    """Supprimer une source YouTube (+ vidéos cascade)."""
+    _yt_supabase.table("youtube_sources").delete().eq("id", source_id).execute()
+    return {"success": True}
+
+
+# --- Refresh vidéos ---
+@app.post("/api/youtube/refresh")
+async def yt_refresh_now():
+    """Forcer un refresh immédiat de toutes les sources YouTube."""
+    results = await _yt_do_refresh()
+    return {"success": True, "results": results}
+
+
+@app.get("/api/youtube/videos")
+async def yt_videos_current():
+    """Renvoie les vidéos actuelles avec l'index de rotation calculé."""
+    cfg_res = _yt_supabase.table("youtube_config").select("*").eq("id", 1).execute()
+    cfg = cfg_res.data[0] if cfg_res.data else {"rotation_minutes": 120}
+    rotation_min = cfg.get("rotation_minutes", 120)
+
+    sources_res = _yt_supabase.table("youtube_sources").select("*").eq("enabled", True).order("created_at").execute()
+    sources = sources_res.data or []
+
+    # Calculer l'index de rotation actuel
+    now_ts = datetime.now(timezone.utc).timestamp()
+    rotation_index = int(now_ts / (rotation_min * 60))
+
+    result = {}
+    for src in sources:
+        vids_res = (
+            _yt_supabase.table("youtube_videos")
+            .select("*")
+            .eq("source_id", src["id"])
+            .order("position")
+            .execute()
+        )
+        videos = vids_res.data or []
+        if videos:
+            idx = rotation_index % len(videos)
+            current_video = videos[idx]
+        else:
+            current_video = None
+
+        result[src["slot_position"]] = {
+            "source": {
+                "id": src["id"],
+                "name": src["name"],
+                "channel_url": src["channel_url"],
+            },
+            "current_video": current_video,
+            "total_videos": len(videos),
+            "rotation_index": rotation_index % len(videos) if videos else 0,
+        }
+
+    return {"slots": result, "rotation_minutes": rotation_min}
+
+
+# --- Logique de refresh ---
+async def _yt_do_refresh() -> list[dict]:
+    """Fetch les dernières vidéos de chaque source active et met à jour le cache."""
+    sources_res = _yt_supabase.table("youtube_sources").select("*").eq("enabled", True).execute()
+    sources = sources_res.data or []
+    results = []
+
+    for src in sources:
+        source_id = src["id"]
+        channel_url = src["channel_url"]
+        video_count = src.get("video_count", 10)
+
+        logger.info("[YT] Refresh %s (%s) — %d vidéos demandées", src["name"], channel_url, video_count)
+
+        try:
+            videos = await fetch_channel_videos(channel_url, video_count)
+            if not videos:
+                logger.warning("[YT] Aucune vidéo trouvée pour %s — conservation du cache", src["name"])
+                results.append({"source": src["name"], "status": "no_new", "count": 0})
+                continue
+
+            # Supprimer les anciennes vidéos de cette source
+            _yt_supabase.table("youtube_videos").delete().eq("source_id", source_id).execute()
+
+            # Insérer les nouvelles
+            rows = [
+                {
+                    "source_id": source_id,
+                    "video_id": v.video_id,
+                    "title": v.title,
+                    "thumbnail_url": v.thumbnail_url,
+                    "published_at": v.published_at,
+                    "position": i,
+                    "fetched_at": datetime.now(timezone.utc).isoformat(),
+                }
+                for i, v in enumerate(videos)
+            ]
+            _yt_supabase.table("youtube_videos").insert(rows).execute()
+
+            logger.info("[YT] ✓ %s : %d vidéos mises en cache", src["name"], len(videos))
+            results.append({"source": src["name"], "status": "ok", "count": len(videos)})
+
+        except Exception as e:
+            logger.error("[YT] Erreur refresh %s : %s", src["name"], e)
+            results.append({"source": src["name"], "status": "error", "error": str(e)})
+
+    return results
+
+
+# --- Boucle auto-refresh YouTube ---
+async def _yt_refresh_loop():
+    """Boucle en arrière-plan : vérifie chaque minute si c'est l'heure de refresh."""
+    logger.info("[YT] Boucle auto-refresh démarrée")
+    last_refresh_hour: int | None = None
+
+    while True:
+        await asyncio.sleep(60)  # Check chaque minute
+        try:
+            cfg_res = _yt_supabase.table("youtube_config").select("*").eq("id", 1).execute()
+            cfg = cfg_res.data[0] if cfg_res.data else {}
+            if not cfg.get("enabled", False):
+                continue
+
+            now = datetime.now(timezone.utc)
+            current_hour = now.hour
+            refresh_hours = cfg.get("refresh_hours", [6, 21])
+
+            # Éviter de refresh 2× dans la même heure
+            if current_hour in refresh_hours and current_hour != last_refresh_hour:
+                logger.info("[YT] Heure de refresh programmé (%dh UTC)", current_hour)
+                last_refresh_hour = current_hour
+                await _yt_do_refresh()
+
+        except Exception as e:
+            logger.error("[YT] Erreur boucle refresh : %s", e)
+
+
+def _restart_yt_refresh():
+    global _yt_refresh_task
+    if _yt_refresh_task and not _yt_refresh_task.done():
+        _yt_refresh_task.cancel()
+    _yt_refresh_task = asyncio.create_task(_yt_refresh_loop())
+
+
+@app.on_event("startup")
+async def startup_yt_refresh():
+    """Démarre la boucle YouTube au démarrage du serveur."""
+    _restart_yt_refresh()

@@ -14,6 +14,7 @@ import {
   X,
   ChevronRight,
   BarChart3,
+  Youtube,
 } from "lucide-react";
 
 const navItems = [
@@ -36,6 +37,11 @@ const navItems = [
     name: "Sources",
     href: "/brian/biendou/admin/sources",
     icon: Globe,
+  },
+  {
+    name: "Vidéos",
+    href: "/brian/biendou/admin/videos",
+    icon: Youtube,
   },
   {
     name: "Paramètres",

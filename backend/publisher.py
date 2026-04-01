@@ -5,6 +5,9 @@ from supabase import create_client
 
 from config import SUPABASE_URL, SUPABASE_SERVICE_KEY
 
+# Nombre maximum d'articles en base — les plus anciens sont purgés automatiquement
+MAX_ARTICLES = 500
+
 
 def _get_supabase():
     return create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
@@ -105,6 +108,8 @@ def publish_article(
         result = sb.table("articles").insert(article_data).execute()
         if result.data:
             print(f"  [OK] Article publié: {title[:60]}...")
+            # Purge automatique des plus anciens si on dépasse le cap
+            enforce_max_articles()
             return result.data[0]
         return None
     except Exception as e:
@@ -116,3 +121,42 @@ def estimate_read_time(text: str) -> int:
     """Estime le temps de lecture en minutes."""
     words = len(text.split())
     return max(2, round(words / 200))
+
+
+def enforce_max_articles(locale: str = "fr") -> int:
+    """
+    Supprime les articles les plus anciens si le total dépasse MAX_ARTICLES.
+    Retourne le nombre d'articles supprimés.
+    """
+    sb = _get_supabase()
+
+    # Compter le nombre total d'articles publiés
+    count_result = sb.table("articles").select("id", count="exact").eq("locale", locale).eq("status", "published").execute()
+    total = count_result.count if count_result.count is not None else len(count_result.data)
+
+    if total <= MAX_ARTICLES:
+        return 0
+
+    overflow = total - MAX_ARTICLES
+    print(f"  [PURGE] {total} articles en base (max {MAX_ARTICLES}), suppression des {overflow} plus anciens...")
+
+    # Récupérer les IDs des articles les plus anciens à supprimer
+    oldest = sb.table("articles") \
+        .select("id, slug, published_at") \
+        .eq("locale", locale) \
+        .eq("status", "published") \
+        .order("published_at", desc=False) \
+        .limit(overflow) \
+        .execute()
+
+    deleted = 0
+    for article in oldest.data:
+        try:
+            sb.table("articles").delete().eq("id", article["id"]).execute()
+            print(f"  [PURGE] Supprimé: {article['slug']}")
+            deleted += 1
+        except Exception as e:
+            print(f"  [PURGE] Erreur suppression {article['slug']}: {e}")
+
+    print(f"  [PURGE] {deleted}/{overflow} articles anciens supprimés")
+    return deleted

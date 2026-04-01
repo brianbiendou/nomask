@@ -3,6 +3,7 @@ import {
   getBreakingNews,
   getArticlesByCategory,
   getArticlesBySubcategory,
+  getYouTubeCurrentVideos,
 } from "@/lib/queries";
 import ArticleCard from "@/components/articles/ArticleCard";
 import HeroCarousel from "@/components/home/HeroCarousel";
@@ -20,6 +21,7 @@ export default async function HomePage() {
     sportArticles,
     economieArticles,
     buyingGuides,
+    ytVideos,
   ] = await Promise.all([
     getBreakingNews(),
     getArticles({ limit: 50 }),
@@ -27,6 +29,7 @@ export default async function HomePage() {
     getArticlesByCategory("sport", "fr", 3),
     getArticlesByCategory("economie", "fr", 3),
     getArticlesBySubcategory("tech", "guides-achat", "fr", 4),
+    getYouTubeCurrentVideos(),
   ]);
 
   // === RÉPARTITION EXCLUSIVE — chaque article n'apparaît que dans UNE section ===
@@ -251,13 +254,11 @@ export default async function HomePage() {
           {/* Videos Wrapper (with dark band behind) */}
           <div className="relative mt-4">
             {/* The absolute full-bleed dark background */}
-            {/* 12% top means ~20% of the top video is exposed above it. 12% bottom ends exactly in the middle of bottom videos. */}
             <div className="absolute left-1/2 -translate-x-1/2 w-[100vw] bg-[#212121] z-0" style={{ top: '12%', bottom: '12%' }}>
-               {/* Central Radial Glow to highlight videos */}
                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[70%] h-[100%] bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.04)_0%,transparent_50%)] pointer-events-none"></div>
             </div>
 
-            {/* Decorative Triangles (anchored to the wrapper) */}
+            {/* Decorative Triangles */}
             <svg viewBox="0 0 100 100" className="absolute -left-28 -top-[2%] w-48 h-48 text-brand z-10 pointer-events-none opacity-80" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M45 15 L90 85 A5 5 0 0 1 85 90 L15 90 A5 5 0 0 1 10 85 Z" strokeLinejoin="round" strokeLinecap="round" transform="rotate(-15 50 50)" />
             </svg>
@@ -278,75 +279,102 @@ export default async function HomePage() {
             {/* Content Over Dark Band */}
             <div className="relative z-20 w-full flex flex-col pt-0 pb-0">
                
-               {/* MAIN VIDEO CARD */}
-               <div className="w-full relative">
-                 {/* Reverted to exact aspect-video so it's not overly wide ("trop gros horizontalement") */}
+               {/* MAIN VIDEO CARD — Le Monde */}
+               <a href={ytVideos.main?.youtube_url ?? "#"} target="_blank" rel="noopener noreferrer" className="w-full relative block">
                  <div className="aspect-video w-full bg-[#0a0a0a] rounded flex items-center justify-center relative overflow-hidden group cursor-pointer border-b-2 border-black/50 shadow-2xl">
+                   {ytVideos.main ? (
+                     <img
+                       src={ytVideos.main.thumbnail_url}
+                       alt={ytVideos.main.title}
+                       className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                     />
+                   ) : null}
                    {/* Play Button Solid Circle */}
-                   <div className="w-16 h-16 md:w-20 md:h-20 bg-[#333333]/90 rounded-full flex items-center justify-center group-hover:bg-[#444444]/90 transition-all duration-300">
+                   <div className="w-16 h-16 md:w-20 md:h-20 bg-[#333333]/90 rounded-full flex items-center justify-center group-hover:bg-[#444444]/90 transition-all duration-300 relative z-10">
                      <svg className="w-6 h-6 md:w-8 md:h-8 text-white ml-1.5" viewBox="0 0 24 24" fill="currentColor">
                        <polygon points="6,4 20,12 6,20" />
                      </svg>
                    </div>
-                   {/* Top Right Logo pseudo-element (stylized N box like the image) */}
-                   <div className="absolute top-4 right-5 text-brand opacity-80 backdrop-blur-sm border-[1px] border-brand rounded px-2 py-1 flex items-center justify-center">
+                   {/* Top Right Logo */}
+                   <div className="absolute top-4 right-5 text-brand opacity-80 backdrop-blur-sm border-[1px] border-brand rounded px-2 py-1 flex items-center justify-center z-10">
                      <span className="text-brand font-black text-sm mb-0.5">N</span>
                    </div>
                  </div>
 
-                 {/* Main Title and Meta (Placed below video) */}
+                 {/* Main Title and Meta */}
                  <div className="mt-5 px-1 mb-8 max-w-4xl">
                    <div className="flex items-center gap-1.5 text-gray-400 text-[11px] font-bold uppercase mb-2">
                      <svg className="w-3.5 h-3.5 text-brand" viewBox="0 0 24 24" fill="currentColor">
                        <polygon points="6,4 20,12 6,20" />
                      </svg>
-                     <span>Catégorie vidéo</span>
+                     <span>{ytVideos.main?.source_name ?? "Vidéo"}</span>
                    </div>
                    <h3 className="text-white text-2xl md:text-[28px] lg:text-[30px] font-black leading-[1.1] tracking-tight hover:text-gray-200 cursor-pointer">
-                     Titre de la vidéo principale à venir : un contenu exclusif et très impactant
+                     {ytVideos.main?.title ?? "Vidéo à venir"}
                    </h3>
                  </div>
-               </div>
+               </a>
 
-               {/* 2 SMALL VIDEOS GRIDS */}
+               {/* 2 SMALL VIDEOS GRIDS — Frandroid + Konbini */}
                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 w-full">
-                 {/* Small Video 1 */}
-                 <div className="aspect-video w-full bg-[#0a0a0a] rounded flex items-center justify-center relative overflow-hidden group cursor-pointer shadow-2xl">
-                   <div className="w-12 h-12 md:w-16 md:h-16 bg-[#333333]/90 rounded-full flex items-center justify-center group-hover:bg-[#444444]/90 transition-all duration-300">
-                     <svg className="w-5 h-5 md:w-6 md:h-6 text-white ml-1" viewBox="0 0 24 24" fill="currentColor">
-                       <polygon points="6,4 20,12 6,20" />
-                     </svg>
+                 {/* Small Video 1 — bottom_left */}
+                 <a href={ytVideos.bottom_left?.youtube_url ?? "#"} target="_blank" rel="noopener noreferrer" className="block">
+                   <div className="aspect-video w-full bg-[#0a0a0a] rounded flex items-center justify-center relative overflow-hidden group cursor-pointer shadow-2xl">
+                     {ytVideos.bottom_left ? (
+                       <img
+                         src={ytVideos.bottom_left.thumbnail_url}
+                         alt={ytVideos.bottom_left.title}
+                         className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                       />
+                     ) : null}
+                     <div className="w-12 h-12 md:w-16 md:h-16 bg-[#333333]/90 rounded-full flex items-center justify-center group-hover:bg-[#444444]/90 transition-all duration-300 relative z-10">
+                       <svg className="w-5 h-5 md:w-6 md:h-6 text-white ml-1" viewBox="0 0 24 24" fill="currentColor">
+                         <polygon points="6,4 20,12 6,20" />
+                       </svg>
+                     </div>
+                     <div className="absolute top-3 right-3 text-brand border-[1px] border-brand rounded px-1.5 py-0.5 z-10">
+                       <span className="text-brand font-black text-[10px]">N</span>
+                     </div>
                    </div>
-                   <div className="absolute top-3 right-3 text-brand border-[1px] border-brand rounded px-1.5 py-0.5">
-                     <span className="text-brand font-black text-[10px]">N</span>
-                   </div>
-                 </div>
+                 </a>
 
-                 {/* Small Video 2 */}
-                 <div className="aspect-video w-full bg-[#0a0a0a] rounded flex items-center justify-center relative overflow-hidden group cursor-pointer shadow-2xl">
-                   <div className="w-12 h-12 md:w-16 md:h-16 bg-[#333333]/90 rounded-full flex items-center justify-center group-hover:bg-[#444444]/90 transition-all duration-300">
-                     <svg className="w-5 h-5 md:w-6 md:h-6 text-white ml-1" viewBox="0 0 24 24" fill="currentColor">
-                       <polygon points="6,4 20,12 6,20" />
-                     </svg>
+                 {/* Small Video 2 — bottom_right */}
+                 <a href={ytVideos.bottom_right?.youtube_url ?? "#"} target="_blank" rel="noopener noreferrer" className="block">
+                   <div className="aspect-video w-full bg-[#0a0a0a] rounded flex items-center justify-center relative overflow-hidden group cursor-pointer shadow-2xl">
+                     {ytVideos.bottom_right ? (
+                       <img
+                         src={ytVideos.bottom_right.thumbnail_url}
+                         alt={ytVideos.bottom_right.title}
+                         className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                       />
+                     ) : null}
+                     <div className="w-12 h-12 md:w-16 md:h-16 bg-[#333333]/90 rounded-full flex items-center justify-center group-hover:bg-[#444444]/90 transition-all duration-300 relative z-10">
+                       <svg className="w-5 h-5 md:w-6 md:h-6 text-white ml-1" viewBox="0 0 24 24" fill="currentColor">
+                         <polygon points="6,4 20,12 6,20" />
+                       </svg>
+                     </div>
+                     <div className="absolute top-3 right-3 text-brand border-[1px] border-brand rounded px-1.5 py-0.5 z-10">
+                       <span className="text-brand font-black text-[10px]">N</span>
+                     </div>
                    </div>
-                   <div className="absolute top-3 right-3 text-brand border-[1px] border-brand rounded px-1.5 py-0.5">
-                     <span className="text-brand font-black text-[10px]">N</span>
-                   </div>
-                 </div>
+                 </a>
                </div>
                
             </div>
           </div>
 
-          {/* Small Videos Titles (Sitting cleanly on the WHITE BACKGROUND below) */}
-          {/* Matches the grid gap above exactly */}
+          {/* Small Videos Titles */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 w-full mt-4 !px-1">
-              <h4 className="text-gray-900 text-[15px] font-bold leading-snug hover:text-brand cursor-pointer">
-                L'enfer des arnaques en ligne : pourquoi le pire est encore à venir quand on s'y attend le moins
-              </h4>
-              <h4 className="text-gray-900 text-[15px] font-bold leading-snug">
-                Revenir sur la Lune n'a jamais été aussi risqué : analyse des nouveaux défis spatiaux
-              </h4>
+              <a href={ytVideos.bottom_left?.youtube_url ?? "#"} target="_blank" rel="noopener noreferrer">
+                <h4 className="text-gray-900 text-[15px] font-bold leading-snug hover:text-brand cursor-pointer">
+                  {ytVideos.bottom_left?.title ?? "Vidéo à venir"}
+                </h4>
+              </a>
+              <a href={ytVideos.bottom_right?.youtube_url ?? "#"} target="_blank" rel="noopener noreferrer">
+                <h4 className="text-gray-900 text-[15px] font-bold leading-snug hover:text-brand cursor-pointer">
+                  {ytVideos.bottom_right?.title ?? "Vidéo à venir"}
+                </h4>
+              </a>
           </div>
 
         </div>

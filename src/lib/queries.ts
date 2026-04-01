@@ -363,3 +363,65 @@ export async function getSidebarArticles(
 
   return { alirePlus, thematique, definitions, thematiqueCategory: pickedCat };
 }
+
+
+// ────────────────────────────────────────
+// YouTube Videos — rotation automatique
+// ────────────────────────────────────────
+export interface YouTubeVideoSlot {
+  source_name: string;
+  video_id: string;
+  title: string;
+  thumbnail_url: string;
+  youtube_url: string;
+}
+
+export async function getYouTubeCurrentVideos(): Promise<Record<string, YouTubeVideoSlot | null>> {
+  // 1. Charger la config de rotation
+  const { data: cfgData } = await supabase
+    .from("youtube_config")
+    .select("rotation_minutes")
+    .eq("id", 1)
+    .single();
+
+  const rotationMin = cfgData?.rotation_minutes ?? 120;
+
+  // 2. Charger les sources actives
+  const { data: sources } = await supabase
+    .from("youtube_sources")
+    .select("id, name, slot_position")
+    .eq("enabled", true)
+    .order("created_at");
+
+  if (!sources || sources.length === 0) return { main: null, bottom_left: null, bottom_right: null };
+
+  // 3. Index de rotation basé sur le temps
+  const nowTs = Math.floor(Date.now() / 1000);
+  const rotationIndex = Math.floor(nowTs / (rotationMin * 60));
+
+  // 4. Pour chaque source, récupérer ses vidéos et sélectionner la courante
+  const result: Record<string, YouTubeVideoSlot | null> = { main: null, bottom_left: null, bottom_right: null };
+
+  for (const src of sources) {
+    const { data: videos } = await supabase
+      .from("youtube_videos")
+      .select("video_id, title, thumbnail_url")
+      .eq("source_id", src.id)
+      .order("position");
+
+    if (!videos || videos.length === 0) continue;
+
+    const idx = rotationIndex % videos.length;
+    const v = videos[idx];
+
+    result[src.slot_position] = {
+      source_name: src.name,
+      video_id: v.video_id,
+      title: v.title,
+      thumbnail_url: v.thumbnail_url,
+      youtube_url: `https://www.youtube.com/watch?v=${v.video_id}`,
+    };
+  }
+
+  return result;
+}
