@@ -9,6 +9,7 @@ import HeroCarousel from "@/components/home/HeroCarousel";
 import Link from "next/link";
 import type { ArticleWithRelations } from "@/types";
 import { formatDateShort, formatDateWithTime } from "@/lib/utils";
+import { AdSenseDisplay } from "@/components/shared/AdSense";
 
 export const revalidate = 300;
 
