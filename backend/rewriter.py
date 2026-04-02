@@ -9,6 +9,7 @@ Le point de vue (perspective) est injecté dans le prompt système.
 """
 import json
 import re
+import asyncio
 
 import aiohttp
 from slugify import slugify
@@ -21,36 +22,51 @@ from config import (
     OLLAMA_TIMEOUT,
 )
 
+# Sémaphore global : 1 seul appel Ollama à la fois
+_ollama_semaphore = asyncio.Semaphore(1)
+
+
+async def ping_ollama() -> bool:
+    """Vérifie si Ollama est joignable (léger, pas de génération)."""
+    try:
+        timeout = aiohttp.ClientTimeout(total=10)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.get(f"{OLLAMA_BASE_URL}/api/tags") as resp:
+                return resp.status == 200
+    except Exception:
+        return False
+
 
 async def _call_ollama(system_prompt: str, user_prompt: str, temperature: float = 0.7) -> tuple[str, bool]:
-    """Appelle Ollama de façon async et retourne (réponse texte, True si Ollama a répondu)."""
-    try:
-        timeout = aiohttp.ClientTimeout(total=OLLAMA_TIMEOUT)
-        async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.post(
-                f"{OLLAMA_BASE_URL}/api/generate",
-                json={
-                    "model": OLLAMA_MODEL,
-                    "system": system_prompt,
-                    "prompt": user_prompt,
-                    "stream": False,
-                    "options": {
-                        "temperature": temperature,
-                        "num_predict": 4096,
-                        "top_p": 0.9,
+    """Appelle Ollama de façon async avec sémaphore (1 requête à la fois)."""
+    async with _ollama_semaphore:
+        try:
+            timeout = aiohttp.ClientTimeout(total=OLLAMA_TIMEOUT)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.post(
+                    f"{OLLAMA_BASE_URL}/api/generate",
+                    json={
+                        "model": OLLAMA_MODEL,
+                        "system": system_prompt,
+                        "prompt": user_prompt,
+                        "stream": False,
+                        "options": {
+                            "temperature": temperature,
+                            "num_predict": 4096,
+                            "top_p": 0.9,
+                        },
                     },
-                },
-            ) as resp:
-                resp.raise_for_status()
-                data = await resp.json()
-                text = data.get("response", "").strip()
-                return (text, True) if text else ("", False)
-    except (aiohttp.ClientConnectorError, aiohttp.ClientConnectionError):
-        print("  [WARN] Ollama non disponible, réécriture structurelle utilisée.")
-        return "", False
-    except Exception as e:
-        print(f"  [WARN] Erreur Ollama: {e}")
-        return "", False
+                ) as resp:
+                    resp.raise_for_status()
+                    data = await resp.json()
+                    text = data.get("response", "").strip()
+                    return (text, True) if text else ("", False)
+        except (aiohttp.ClientConnectorError, aiohttp.ClientConnectionError):
+            print("  [WARN] Ollama non disponible.")
+            return "", False
+        except Exception as e:
+            print(f"  [WARN] Erreur Ollama: {e}")
+            return "", False
 
 
 # ────────────────────────── PROMPTS ──────────────────────────

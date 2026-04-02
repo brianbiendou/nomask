@@ -147,6 +147,12 @@ async def process_single_article(
         rewrite_title(scraped.title, perspective),
         rewrite_excerpt(scraped.excerpt, perspective),
     )
+
+    # ZÉRO FALLBACK : si le titre ou l'extrait n'ont pas été réécrits → on refuse
+    if not title_ollama or not excerpt_ollama:
+        print(f"  [ABORT] Ollama n'a pas réécrit titre/extrait — article NON publié")
+        return {"_ollama_failed": True, "url": scraped.url}
+
     new_slug = generate_slug(new_title)
 
     loop = asyncio.get_event_loop()
@@ -170,6 +176,11 @@ async def process_single_article(
     images_task = process_images(scraped.image_urls, new_slug)
 
     (new_content, content_ollama), url_map = await asyncio.gather(content_task, images_task)
+
+    # ZÉRO FALLBACK : si le contenu n'a pas été réécrit → on refuse
+    if not content_ollama:
+        print(f"  [ABORT] Ollama n'a pas réécrit le contenu — article NON publié")
+        return {"_ollama_failed": True, "url": scraped.url}
 
     # Réinjecter les images originales dans le contenu réécrit
     if original_image_blocks:
@@ -293,34 +304,46 @@ async def run_pipeline(
     scraped_articles = await scrape_batch(urls, max_concurrent=MAX_CONCURRENT_SCRAPES)
     print(f"  {len(scraped_articles)} articles scrappés avec succès")
 
-    # Étape 2 : Traitement parallèle des articles (semaphore pour limiter la charge)
-    # Ollama traite 1 requête à la fois, mais les I/O images/Supabase se chevauchent
-    sem = asyncio.Semaphore(2)
+    # Étape 2 : Traitement SÉQUENTIEL des articles
+    # Le sémaphore Ollama = 1 sérialise déjà l'IA, on traite un par un
+    # pour pouvoir détecter 2 échecs Ollama consécutifs et arrêter
+    ollama_consecutive_failures = 0
+    results = []
 
-    async def _process_with_sem(i: int, scraped: ScrapedArticle):
-        async with sem:
-            offset = i * 0.5
-            return await process_single_article(
+    for i, scraped in enumerate(scraped_articles):
+        if ollama_consecutive_failures >= 2:
+            print(f"  [STOP] 2 échecs Ollama consécutifs — arrêt du pipeline")
+            break
+
+        try:
+            r = await process_single_article(
                 scraped=scraped,
                 categories=categories,
                 authors=authors,
                 subcategories=subcategories,
                 perspective=perspective,
-                publish_offset_hours=offset,
+                publish_offset_hours=i * 0.5,
                 force=force,
             )
 
-    tasks = [_process_with_sem(i, s) for i, s in enumerate(scraped_articles)]
-    raw_results = await asyncio.gather(*tasks, return_exceptions=True)
-    results = []
-    for r in raw_results:
-        if isinstance(r, Exception):
-            print(f"  [ERREUR] Article échoué: {r}")
-        elif r:
-            results.append(r)
+            if r is None:
+                # Article skippé (doublon, déjà publié) — pas un échec Ollama
+                continue
+            elif isinstance(r, dict) and r.get("_ollama_failed"):
+                ollama_consecutive_failures += 1
+                print(f"  [OLLAMA FAIL {ollama_consecutive_failures}/2] {r.get('url', '?')[:60]}")
+                continue
+            else:
+                ollama_consecutive_failures = 0  # reset
+                results.append(r)
+        except Exception as e:
+            print(f"  [ERREUR] Article échoué: {e}")
+            ollama_consecutive_failures += 1
 
     print(f"\n{'#'*60}")
     print(f"# TERMINÉ — {len(results)}/{len(urls)} articles publiés")
+    if ollama_consecutive_failures >= 2:
+        print(f"# ⚠ ARRÊT: Ollama indisponible (2 échecs consécutifs)")
     print(f"{'#'*60}\n")
 
     return results

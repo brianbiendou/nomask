@@ -32,6 +32,8 @@ from pipeline import run_pipeline, process_single_article, is_url_already_proces
 from discovery import discover_and_return_urls, discover_trending, discover_trending_multi, SITE_PROFILES
 from config import DEFAULT_PERSPECTIVE, OLLAMA_MODEL, OLLAMA_BASE_URL, OLLAMA_TIMEOUT
 from scraper import scrape_batch
+from rewriter import ping_ollama
+import telegram as tg
 
 app = FastAPI(title="NoMask Backend", version="1.0.0")
 
@@ -153,15 +155,62 @@ _auto_task: Optional[asyncio.Task] = None
 _auto_last_run: Optional[str] = None
 _auto_next_run: Optional[str] = None
 _source_last_run: dict[str, float] = {}  # source_id → timestamp dernière exécution
+_ollama_status: str = "unknown"  # "ok", "unreachable", "unknown"
 
 _AUTO_TICK_SECONDS = 30  # Vérifie les sources toutes les 30 sec
 
 
+async def _double_ping_ollama() -> bool:
+    """Ping Ollama 2 fois pour être sûr. Retourne True si au moins 1 ping réussit."""
+    ok1 = await ping_ollama()
+    if ok1:
+        return True
+    logger.warning("[OLLAMA] Premier ping échoué, retry dans 3s...")
+    await asyncio.sleep(3)
+    ok2 = await ping_ollama()
+    if ok2:
+        return True
+    logger.error("[OLLAMA] Deuxième ping échoué — Ollama injoignable")
+    return False
+
+
+async def _notify_ollama_down():
+    """Fire-and-forget Telegram notification."""
+    try:
+        await tg.notify_ollama_down()
+    except Exception:
+        pass
+
+
+async def _notify_ollama_back():
+    """Fire-and-forget Telegram notification."""
+    try:
+        await tg.notify_ollama_back()
+    except Exception:
+        pass
+
+
 async def _auto_loop():
-    global _auto_last_run, _auto_next_run
+    global _auto_last_run, _auto_next_run, _auto_config, _ollama_status
+    _was_unreachable = False
     logger.info("[AUTO] Boucle démarrée — vérification toutes les %ds", _AUTO_TICK_SECONDS)
     while _auto_config.enabled:
         await asyncio.sleep(_AUTO_TICK_SECONDS)
+
+        # Ping Ollama avant chaque cycle
+        if not await _double_ping_ollama():
+            _ollama_status = "unreachable"
+            if not _was_unreachable:
+                _was_unreachable = True
+                asyncio.create_task(_notify_ollama_down())
+            logger.warning("[AUTO] Ollama injoignable — cycle auto en pause")
+            continue
+
+        # Ollama est de retour après une panne
+        if _was_unreachable:
+            _was_unreachable = False
+            asyncio.create_task(_notify_ollama_back())
+        _ollama_status = "ok"
 
         now = datetime.now(timezone.utc).timestamp()
         all_sources = _load_sources()
@@ -281,6 +330,7 @@ async def _run_pipeline_job(
 
         # Update articles with results
         published_count = 0
+        ollama_failures = 0
         for i, res in enumerate(results):
             if i < len(job["articles"]):
                 job["articles"][i]["newTitle"] = res.get("title", "")
@@ -290,11 +340,12 @@ async def _run_pipeline_job(
                 published_count += 1
                 logger.debug(f"[JOB {job_id}] Article {i+1}: {res.get('title', 'N/A')[:60]}...")
 
-        # Mark non-published articles
+        # Mark non-published articles (Ollama failures)
         for art in job["articles"]:
             if art["status"] == "processing":
-                art["status"] = "skipped"
-                logger.warning(f"[JOB {job_id}] Article skippé: {art['title'][:60]}...")
+                art["status"] = "ollama_failed"
+                ollama_failures += 1
+                logger.warning(f"[JOB {job_id}] Article non réécrit (Ollama): {art['title'][:60]}...")
 
         job["steps"][4]["detail"] = f"{published_count}/{len(urls)} publiés"
         job["status"] = "completed"
@@ -302,6 +353,15 @@ async def _run_pipeline_job(
 
         job["completedAt"] = datetime.now(timezone.utc).isoformat()
         _save_jobs()
+
+        # Notification Telegram (fire & forget)
+        source_url = job.get("sourceUrl", "?")
+        asyncio.create_task(tg.notify_pipeline_complete(
+            source=source_url,
+            published=published_count,
+            total=len(urls),
+            ollama_failures=ollama_failures,
+        ))
 
     except Exception as e:
         logger.error(f"[JOB {job_id}] ✗ ERREUR: {type(e).__name__}: {str(e)}", exc_info=True)
@@ -449,6 +509,7 @@ async def auto_get():
         "lastRun": _auto_last_run,
         "nextRun": _auto_next_run,
         "running": _auto_task is not None and not _auto_task.done() if _auto_task else False,
+        "ollamaStatus": _ollama_status,
         "ollama": {
             "url": OLLAMA_BASE_URL,
             "model": OLLAMA_MODEL,
@@ -460,7 +521,20 @@ async def auto_get():
 @app.post("/api/auto")
 async def auto_set(config: AutoConfig):
     """Mettre à jour la config auto-scrape."""
-    global _auto_config
+    global _auto_config, _ollama_status
+
+    # Si on active le mode auto → double ping Ollama d'abord
+    if config.enabled and not _auto_config.enabled:
+        if not await _double_ping_ollama():
+            _ollama_status = "unreachable"
+            return {
+                "success": False,
+                "error": "Ollama est injoignable. Impossible d'activer la publication automatique.",
+                "ollamaStatus": _ollama_status,
+                "config": _auto_config.model_dump(),
+            }
+        _ollama_status = "ok"
+
     _auto_config = config
     _restart_auto()
     return {
@@ -469,6 +543,7 @@ async def auto_set(config: AutoConfig):
         "lastRun": _auto_last_run,
         "nextRun": _auto_next_run,
         "running": _auto_task is not None and not _auto_task.done() if _auto_task else False,
+        "ollamaStatus": _ollama_status,
     }
 
 
