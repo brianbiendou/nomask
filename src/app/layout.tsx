@@ -106,6 +106,12 @@ export default function RootLayout({
           title={`${SITE_NAME} - Flux RSS`}
           href="/rss.xml"
         />
+        {/* Google AdSense */}
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3632266086082682"
+          crossOrigin="anonymous"
+        />
         {/* Google Reader Revenue Manager (Subscribe with Google) */}
         <script
           async
