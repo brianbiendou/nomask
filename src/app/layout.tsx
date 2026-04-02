@@ -106,6 +106,24 @@ export default function RootLayout({
           title={`${SITE_NAME} - Flux RSS`}
           href="/rss.xml"
         />
+        {/* Google Reader Revenue Manager (Subscribe with Google) */}
+        <script
+          async
+          type="application/javascript"
+          src="https://news.google.com/swg/js/v1/swg-basic.js"
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(self.SWG_BASIC = self.SWG_BASIC || []).push(function(basicSubscriptions) {
+  basicSubscriptions.init({
+    type: "NewsArticle",
+    isPartOfType: ["Product"],
+    isPartOfProductId: "CAow2d7fCw:openaccess",
+    clientOptions: { theme: "light", lang: "fr" }
+  });
+});`,
+          }}
+        />
       </head>
       <body className="min-h-screen flex flex-col">
         <Header />
