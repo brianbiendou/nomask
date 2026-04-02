@@ -6,6 +6,7 @@ import Breadcrumb from "@/components/shared/Breadcrumb";
 import DynamicSidebar from "@/components/shared/DynamicSidebar";
 import Image from "next/image";
 import { SITE_NAME, SITE_URL } from "@/lib/utils";
+import { AdSenseDisplay } from "@/components/shared/AdSense";
 
 export const revalidate = 300;
 
@@ -144,6 +145,9 @@ export default async function AuthorPage({ params }: PageProps) {
         excludeIds={articles.map((a) => a.id)}
       />
       </div>
+
+      {/* Annonce AdSense */}
+      <AdSenseDisplay />
     </div>
     </>
   );

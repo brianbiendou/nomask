@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Breadcrumb from "@/components/shared/Breadcrumb";
 import DynamicSidebar from "@/components/shared/DynamicSidebar";
 import SearchResults from "@/components/search/SearchResults";
+import { AdSenseDisplay } from "@/components/shared/AdSense";
 
 export default function SearchPage() {
   return (
@@ -23,6 +24,9 @@ export default function SearchPage() {
 
         <DynamicSidebar />
       </div>
+
+      {/* Annonce AdSense */}
+      <AdSenseDisplay />
     </div>
   );
 }

@@ -369,6 +369,9 @@ export default async function ArticlePage({ params }: PageProps) {
           </section>
         )}
 
+        {/* Annonce AdSense entre sections */}
+        <AdSenseInArticle />
+
         {/* Section dernières actus globales */}
         {moreLatestArticles.length > 0 && (
           <section className="mt-8 pt-8 border-t border-gray-200">

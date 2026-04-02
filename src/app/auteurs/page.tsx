@@ -4,6 +4,7 @@ import Link from "next/link";
 import { getAllAuthors, getArticlesByAuthor } from "@/lib/queries";
 import Breadcrumb from "@/components/shared/Breadcrumb";
 import { SITE_NAME, SITE_URL } from "@/lib/utils";
+import { AdSenseDisplay } from "@/components/shared/AdSense";
 
 export const revalidate = 300;
 
@@ -89,6 +90,9 @@ export default async function AuthorsPage() {
             </Link>
           ))}
         </div>
+
+        {/* Annonce AdSense */}
+        <AdSenseDisplay />
       </div>
     </>
   );

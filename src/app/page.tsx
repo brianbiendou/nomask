@@ -585,6 +585,11 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* ======= PUBLICITÉ ======= */}
+      <section className="max-w-255 mx-auto px-4 py-6">
+        <AdSenseDisplay />
+      </section>
+
       {/* ======= NOS SÉLECTIONS TESTÉES (fond sombre) ======= */}
       <section className="bg-section-dark py-10">
         <div className="max-w-255 mx-auto px-4">
