@@ -243,6 +243,12 @@ export default async function ArticlePage({ params }: PageProps) {
               dangerouslySetInnerHTML={{ __html: deduplicateImages(article.content, article.image_url) }}
             />
 
+            {/* CTA Newsletter Google Reader Revenue Manager (inline) */}
+            <div
+              className="my-8"
+              dangerouslySetInnerHTML={{ __html: '<div rrm-inline-cta="4fde6997-dbf0-4ed0-9c13-904fd559c3a7"></div>' }}
+            />
+
             {/* Partage en bas */}
             <div className="mt-8 pt-4 border-t border-gray-200">
               <div className="flex items-center gap-3">
