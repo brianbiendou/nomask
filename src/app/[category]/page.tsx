@@ -10,6 +10,7 @@ import Breadcrumb from "@/components/shared/Breadcrumb";
 import Newsletter from "@/components/home/Newsletter";
 import DynamicSidebar from "@/components/shared/DynamicSidebar";
 import { SITE_NAME, SITE_URL } from "@/lib/utils";
+import { AdSenseDisplay } from "@/components/shared/AdSense";
 
 export const revalidate = 300;
 
@@ -92,6 +93,9 @@ export default async function CategoryPage({ params }: PageProps) {
             <div className="space-y-8">
               {/* Premier article en grand */}
               <ArticleCard article={articles[0]} />
+
+              {/* Annonce AdSense */}
+              <AdSenseDisplay />
 
               {/* Le reste en grille */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

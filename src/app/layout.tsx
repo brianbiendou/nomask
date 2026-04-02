@@ -107,6 +107,7 @@ export default function RootLayout({
           href="/rss.xml"
         />
         {/* Google AdSense */}
+        <meta name="google-adsense-account" content="ca-pub-3632266086082682" />
         <script
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3632266086082682"

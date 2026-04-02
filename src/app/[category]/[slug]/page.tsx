@@ -18,6 +18,7 @@ import ShareButtons from "@/components/shared/ShareButtons";
 import AuthorCard from "@/components/shared/AuthorCard";
 import CommentSection from "@/components/comments/CommentSection";
 import DynamicSidebar from "@/components/shared/DynamicSidebar";
+import { AdSenseInArticle, AdSenseDisplay } from "@/components/shared/AdSense";
 
 export const revalidate = 300;
 
@@ -243,6 +244,9 @@ export default async function ArticlePage({ params }: PageProps) {
               dangerouslySetInnerHTML={{ __html: deduplicateImages(article.content, article.image_url) }}
             />
 
+            {/* Google AdSense — Annonce In-Article */}
+            <AdSenseInArticle />
+
             {/* CTA Newsletter Google Reader Revenue Manager (inline) */}
             <div
               className="my-8"
@@ -312,6 +316,9 @@ export default async function ArticlePage({ params }: PageProps) {
               excludeIds={[article.id, ...relatedArticles.map((r) => r.id)]}
               categorySlug={article.category?.slug}
             />
+
+            {/* Annonce AdSense sidebar */}
+            <AdSenseDisplay />
           </aside>
         </div>
       </article>

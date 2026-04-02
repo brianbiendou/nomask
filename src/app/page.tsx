@@ -211,13 +211,8 @@ export default async function HomePage() {
 
       {/* ======= ESPACE PUBLICITAIRE ======= */}
       <section className="py-8">
-        <div className="max-w-255 mx-auto px-4 flex justify-center">
-          <div className="w-full max-w-2xl bg-brand/10 border border-brand/30 rounded-md py-4 px-6 flex items-center justify-center">
-            <span className="bg-brand text-white text-xs font-bold uppercase tracking-wider px-3 py-1 rounded mr-3">
-              Publicité
-            </span>
-            <span className="text-sm text-gray-500">Espace publicitaire</span>
-          </div>
+        <div className="max-w-255 mx-auto px-4">
+          <AdSenseDisplay />
         </div>
       </section>
 
@@ -500,6 +495,11 @@ export default async function HomePage() {
             />
           </div>
         </div>
+      </section>
+
+      {/* ======= PUBLICITÉ ======= */}
+      <section className="max-w-255 mx-auto px-4 pt-6">
+        <AdSenseDisplay />
       </section>
 
       {/* ======= TOUTE L'ACTUALITÉ ======= */}
