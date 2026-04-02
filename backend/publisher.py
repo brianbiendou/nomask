@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 
 from supabase import create_client
 
-from config import SUPABASE_URL, SUPABASE_SERVICE_KEY
+from config import SUPABASE_URL, SUPABASE_SERVICE_KEY, SITE_URL
 
 # Nombre maximum d'articles en base — les plus anciens sont purgés automatiquement
 MAX_ARTICLES = 500
@@ -108,6 +108,15 @@ def publish_article(
         result = sb.table("articles").insert(article_data).execute()
         if result.data:
             print(f"  [OK] Article publié: {title[:60]}...")
+            # Ping IndexNow pour indexation rapide
+            try:
+                import asyncio
+                from indexnow import ping_indexnow
+                cat_slug = result.data[0].get("category_id", "")
+                article_url = f"{SITE_URL}/{slug}"
+                asyncio.create_task(ping_indexnow(article_url))
+            except Exception:
+                pass  # Ne jamais bloquer la publication
             # Purge automatique des plus anciens si on dépasse le cap
             enforce_max_articles()
             return result.data[0]

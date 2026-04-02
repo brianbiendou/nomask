@@ -12,6 +12,7 @@ const SOCIAL_LINKS = [
 
 const FOOTER_LINKS = [
   { name: "À propos", href: "/a-propos" },
+  { name: "Notre équipe", href: "/auteurs" },
   { name: "Mentions légales", href: "/mentions-legales" },
   { name: "Données personnelles", href: "/donnees-personnelles" },
   { name: "Politique Cookies", href: "/politique-cookies" },
@@ -31,7 +32,7 @@ export default function Footer() {
             </span>
           </Link>
           <div className="flex items-center gap-3">
-            {SOCIAL_LINKS.map((s) => (
+            {SOCIAL_LINKS.filter((s) => s.href !== "#").map((s) => (
               <Link
                 key={s.name}
                 href={s.href}
@@ -67,7 +68,10 @@ export default function Footer() {
       {/* Copyright */}
       <div className="max-w-255 mx-auto px-4 pb-8">
         <p className="text-center text-[12px] text-gray-500 font-medium">
-          © {new Date().getFullYear()} NoMask, tous droits réservés
+          © {new Date().getFullYear()} NoMask, tous droits réservés —{" "}
+          <a href="mailto:redaction@nomask.fr" className="hover:text-brand transition-colors">
+            redaction@nomask.fr
+          </a>
         </p>
       </div>
     </footer>

@@ -13,7 +13,7 @@ import {
 import { formatDate, timeAgo, formatDateWithTime, SITE_NAME, SITE_URL } from "@/lib/utils";
 import CategoryBadge from "@/components/shared/CategoryBadge";
 import Breadcrumb from "@/components/shared/Breadcrumb";
-import { JsonLdArticle, JsonLdBreadcrumb } from "@/components/shared/JsonLd";
+import { JsonLdArticle, JsonLdBreadcrumb, JsonLdFAQ } from "@/components/shared/JsonLd";
 import ShareButtons from "@/components/shared/ShareButtons";
 import AuthorCard from "@/components/shared/AuthorCard";
 import CommentSection from "@/components/comments/CommentSection";
@@ -128,6 +128,7 @@ export default async function ArticlePage({ params }: PageProps) {
   return (
     <>
       <JsonLdArticle article={article} />
+      <JsonLdFAQ article={article} />
       <JsonLdBreadcrumb
         items={[
           { name: article.category?.name || "", url: `${SITE_URL}/${article.category?.slug}` },
@@ -192,6 +193,15 @@ export default async function ArticlePage({ params }: PageProps) {
                 {article.published_at && (
                   <span className="text-gray-400">
                     {timeAgo(article.published_at)}
+                  </span>
+                )}
+                {article.updated_at && article.published_at &&
+                  new Date(article.updated_at).getTime() - new Date(article.published_at).getTime() > 60000 && (
+                  <span className="text-gray-400 italic">
+                    · Mis à jour le{" "}
+                    <time dateTime={article.updated_at}>
+                      {formatDate(article.updated_at)}
+                    </time>
                   </span>
                 )}
                 {article.read_time && (

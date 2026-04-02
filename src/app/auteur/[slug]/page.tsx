@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getAuthorBySlug, getArticlesByAuthor } from "@/lib/queries";
+import { getAuthorBySlug, getArticlesByAuthor, getAllAuthors } from "@/lib/queries";
 import ArticleCard from "@/components/articles/ArticleCard";
 import Breadcrumb from "@/components/shared/Breadcrumb";
 import DynamicSidebar from "@/components/shared/DynamicSidebar";
@@ -11,6 +11,11 @@ export const revalidate = 300;
 
 interface PageProps {
   params: Promise<{ slug: string }>;
+}
+
+export async function generateStaticParams() {
+  const authors = await getAllAuthors();
+  return authors.map((a) => ({ slug: a.slug }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -40,9 +45,34 @@ export default async function AuthorPage({ params }: PageProps) {
 
   const articles = await getArticlesByAuthor(author.id);
 
+  const sameAs: string[] = [];
+  if (author.twitter_url) sameAs.push(author.twitter_url);
+  if (author.linkedin_url) sameAs.push(author.linkedin_url);
+
+  const jsonLdPerson = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: author.name,
+    url: `${SITE_URL}/auteur/${author.slug}`,
+    jobTitle: author.role,
+    description: author.bio || undefined,
+    image: author.avatar_url || undefined,
+    sameAs: sameAs.length > 0 ? sameAs : undefined,
+    worksFor: {
+      "@type": "NewsMediaOrganization",
+      name: SITE_NAME,
+      url: SITE_URL,
+    },
+  };
+
   return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdPerson) }}
+      />
     <div className="max-w-255 mx-auto px-4 py-6">
-      <Breadcrumb items={[{ label: "Auteurs", href: "#" }, { label: author.name }]} />
+      <Breadcrumb items={[{ label: "Auteurs", href: "/auteurs" }, { label: author.name }]} />
 
       {/* Profil auteur */}
       <div className="flex flex-col md:flex-row items-start gap-6 mb-10 mt-4">
@@ -115,5 +145,6 @@ export default async function AuthorPage({ params }: PageProps) {
       />
       </div>
     </div>
+    </>
   );
 }

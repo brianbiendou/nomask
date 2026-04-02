@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { getAllArticleSlugs, getCategories } from "@/lib/queries";
+import { getAllArticleSlugs, getCategories, getAllAuthors } from "@/lib/queries";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.nomask.fr";
 
@@ -19,13 +19,37 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.3,
     },
     {
+      url: `${SITE_URL}/auteurs`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.5,
+    },
+    {
       url: `${SITE_URL}/contact`,
       lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.3,
     },
     {
+      url: `${SITE_URL}/recherche`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.2,
+    },
+    {
       url: `${SITE_URL}/mentions-legales`,
+      lastModified: new Date(),
+      changeFrequency: "yearly",
+      priority: 0.1,
+    },
+    {
+      url: `${SITE_URL}/donnees-personnelles`,
+      lastModified: new Date(),
+      changeFrequency: "yearly",
+      priority: 0.1,
+    },
+    {
+      url: `${SITE_URL}/politique-cookies`,
       lastModified: new Date(),
       changeFrequency: "yearly",
       priority: 0.1,
@@ -52,5 +76,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     }));
 
-  return [...staticPages, ...categoryPages, ...articlePages];
+  // Pages d'auteurs
+  const authors = await getAllAuthors();
+  const authorPages: MetadataRoute.Sitemap = authors.map((author) => ({
+    url: `${SITE_URL}/auteur/${author.slug}`,
+    lastModified: new Date(),
+    changeFrequency: "weekly" as const,
+    priority: 0.5,
+  }));
+
+  return [...staticPages, ...categoryPages, ...articlePages, ...authorPages];
 }

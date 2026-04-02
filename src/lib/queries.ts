@@ -278,6 +278,16 @@ export async function getArticlesByAuthor(
   return data as ArticleWithRelations[];
 }
 
+export async function getAllAuthors() {
+  const { data, error } = await supabase
+    .from("authors")
+    .select("*")
+    .order("name", { ascending: true });
+
+  if (error) return [];
+  return data as import("@/types").Author[];
+}
+
 export async function searchArticles(
   query: string,
   locale: string = "fr",

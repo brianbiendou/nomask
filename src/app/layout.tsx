@@ -42,7 +42,9 @@ export const metadata: Metadata = {
     "France",
   ],
   icons: {
-    icon: "/favicon.svg",
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
   },
   authors: [{ name: SITE_NAME }],
   creator: SITE_NAME,
@@ -96,6 +98,8 @@ export default function RootLayout({
     <html lang="fr" className={`${inter.variable} ${sourceSans.variable}`}>
       <head>
         <JsonLdWebSite />
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#dc2626" />
         <link
           rel="alternate"
           type="application/rss+xml"

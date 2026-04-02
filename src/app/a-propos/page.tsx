@@ -1,15 +1,52 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import Image from "next/image";
 import Breadcrumb from "@/components/shared/Breadcrumb";
 import DynamicSidebar from "@/components/shared/DynamicSidebar";
-import { SITE_NAME } from "@/lib/utils";
+import { getAllAuthors } from "@/lib/queries";
+import { SITE_NAME, SITE_URL } from "@/lib/utils";
+
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: `À propos — ${SITE_NAME}`,
   description: `Découvrez ${SITE_NAME}, votre média d'information indépendant. Notre mission, nos valeurs et notre équipe.`,
+  alternates: {
+    canonical: `${SITE_URL}/a-propos`,
+  },
 };
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const authors = await getAllAuthors();
+
+  const jsonLdOrg = {
+    "@context": "https://schema.org",
+    "@type": "NewsMediaOrganization",
+    name: SITE_NAME,
+    url: SITE_URL,
+    logo: {
+      "@type": "ImageObject",
+      url: `${SITE_URL}/logo.png`,
+    },
+    description: `${SITE_NAME} est un média d'information en ligne indépendant. L'information sans filtre.`,
+    foundingDate: "2025",
+    founder: {
+      "@type": "Person",
+      name: "Brian Biendou",
+      url: `${SITE_URL}/auteur/brian-biendou`,
+    },
+    email: "redaction@nomask.fr",
+    sameAs: [],
+    publishingPrinciples: `${SITE_URL}/a-propos`,
+    correctionsPolicy: `${SITE_URL}/a-propos`,
+  };
+
   return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdOrg) }}
+      />
     <div className="max-w-255 mx-auto px-4 py-6">
       <Breadcrumb items={[{ label: "À propos" }]} />
 
@@ -78,6 +115,37 @@ export default function AboutPage() {
           chaque rédacteur apporte une expertise pointue et un regard critique sur l&apos;actualité.
         </p>
 
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+          {authors.map((author) => (
+            <Link
+              key={author.id}
+              href={`/auteur/${author.slug}`}
+              className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group"
+            >
+              {author.avatar_url && (
+                <Image
+                  src={author.avatar_url}
+                  alt={author.name}
+                  width={48}
+                  height={48}
+                  className="rounded-full shrink-0"
+                />
+              )}
+              <div>
+                <p className="text-sm font-bold font-sans group-hover:text-red-600 transition-colors">
+                  {author.name}
+                </p>
+                <p className="text-xs text-gray-500">{author.role}</p>
+              </div>
+            </Link>
+          ))}
+        </div>
+        <p className="mt-4">
+          <Link href="/auteurs" className="text-red-600 hover:underline font-semibold">
+            Voir toute l&apos;équipe →
+          </Link>
+        </p>
+
         <h2 className="text-xl font-bold font-sans mt-8">Nous contacter</h2>
         <p>
           Une question, une suggestion, une correction ? Nous sommes à votre écoute.
@@ -108,5 +176,6 @@ export default function AboutPage() {
       <DynamicSidebar />
       </div>
     </div>
+    </>
   );
 }

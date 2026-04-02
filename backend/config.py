@@ -44,3 +44,7 @@ MAX_CONCURRENT_REWRITES = int(os.environ.get("MAX_CONCURRENT_REWRITES", "3"))
 # Telegram Bot
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
+
+# IndexNow
+INDEXNOW_KEY = os.environ.get("INDEXNOW_KEY", "")
+SITE_URL = os.environ.get("NEXT_PUBLIC_SITE_URL", "https://www.nomask.fr")
