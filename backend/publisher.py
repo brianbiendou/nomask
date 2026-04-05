@@ -112,9 +112,15 @@ def publish_article(
             try:
                 import asyncio
                 from indexnow import ping_indexnow
-                cat_slug = result.data[0].get("category_id", "")
                 article_url = f"{SITE_URL}/{slug}"
-                asyncio.create_task(ping_indexnow(article_url))
+                loop = asyncio.get_event_loop()
+                loop.create_task(ping_indexnow(article_url))
+            except RuntimeError:
+                # Pas de boucle active — lancer dans un thread
+                import asyncio
+                from indexnow import ping_indexnow
+                article_url = f"{SITE_URL}/{slug}"
+                asyncio.run(ping_indexnow(article_url))
             except Exception:
                 pass  # Ne jamais bloquer la publication
             # Purge automatique des plus anciens si on dépasse le cap
