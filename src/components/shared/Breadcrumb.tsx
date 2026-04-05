@@ -7,15 +7,16 @@ interface BreadcrumbItem {
 
 interface BreadcrumbProps {
   items: BreadcrumbItem[];
+  locale?: string;
 }
 
-export default function Breadcrumb({ items }: BreadcrumbProps) {
+export default function Breadcrumb({ items, locale = "fr" }: BreadcrumbProps) {
   return (
-    <nav aria-label="Fil d'Ariane" className="mb-4">
+    <nav aria-label={locale === "en" ? "Breadcrumb" : "Fil d'Ariane"} className="mb-4">
       <ol className="flex items-center gap-2 text-xs font-sans text-gray-500 uppercase tracking-wider">
         <li>
-          <Link href="/" className="hover:text-brand transition-colors">
-            Accueil
+          <Link href={`/${locale}`} className="hover:text-brand transition-colors">
+            {locale === "en" ? "Home" : "Accueil"}
           </Link>
         </li>
         {items.map((item, index) => (

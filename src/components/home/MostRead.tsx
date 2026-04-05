@@ -3,9 +3,10 @@ import Link from "next/link";
 
 interface MostReadProps {
   articles: ArticleWithRelations[];
+  locale?: string;
 }
 
-export default function MostRead({ articles }: MostReadProps) {
+export default function MostRead({ articles, locale = "fr" }: MostReadProps) {
   if (articles.length === 0) return null;
 
   return (
@@ -14,7 +15,7 @@ export default function MostRead({ articles }: MostReadProps) {
         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
           <path d="M12.1 18.55l-.1.1-.11-.1C7.14 14.24 4 11.39 4 8.5 4 6.5 5.5 5 7.5 5c1.54 0 3.04.99 3.57 2.36h1.87C13.46 5.99 14.96 5 16.5 5 18.5 5 20 6.5 20 8.5c0 2.89-3.14 5.74-7.9 10.05z" />
         </svg>
-        Les plus lus
+        {locale === "en" ? "Most read" : "Les plus lus"}
       </h3>
       <div className="space-y-4">
         {articles.map((article, index) => (
@@ -35,7 +36,7 @@ export default function MostRead({ articles }: MostReadProps) {
                 </span>
               )}
               <Link
-                href={`/${article.category?.slug}/${article.slug}`}
+                href={`/${locale}/${article.category?.slug}/${article.slug}`}
                 className="block text-sm font-bold text-dark hover:text-brand transition-colors font-sans leading-tight mt-0.5"
               >
                 {article.title}

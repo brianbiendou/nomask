@@ -41,13 +41,15 @@ interface ArticleCardProps {
     | "recap-text"
     | "actus-row"
     | "actus-featured";
+  locale?: string;
 }
 
 export default function ArticleCard({
   article,
   variant = "default",
+  locale = "fr",
 }: ArticleCardProps) {
-  const articleUrl = `/${article.category?.slug}/${article.slug}`;
+  const articleUrl = `/${locale}/${article.category?.slug}/${article.slug}`;
 
   /* ==================== HERO : image + bordure L-shape brand ==================== */
   if (variant === "hero") {
@@ -87,7 +89,7 @@ export default function ArticleCard({
           </Link>
           {article.published_at && (
             <span className="text-xs text-gray-400 mt-2 inline-block">
-              {formatDateShort(article.published_at)}
+              {formatDateShort(article.published_at, locale)}
             </span>
           )}
         </div>
@@ -121,7 +123,7 @@ export default function ArticleCard({
           </Link>
           {article.published_at && (
             <span className="text-[11px] text-gray-400 mt-1.5">
-              {formatDateShort(article.published_at)}
+              {formatDateShort(article.published_at, locale)}
             </span>
           )}
         </div>
@@ -163,7 +165,7 @@ export default function ArticleCard({
           </Link>
           {article.published_at && (
             <span className="text-[11px] text-gray-400">
-              {timeAgo(article.published_at)}
+              {timeAgo(article.published_at, locale)}
             </span>
           )}
         </div>
@@ -194,7 +196,7 @@ export default function ArticleCard({
         <div>
           {article.published_at && (
             <span className="text-[11px] text-gray-400 block mb-1">
-              {formatDateWithTime(article.published_at)}
+              {formatDateWithTime(article.published_at, locale)}
             </span>
           )}
           {article.category && (
@@ -291,7 +293,7 @@ export default function ArticleCard({
           </Link>
           {article.published_at && (
             <span className="text-[11px] text-gray-400">
-              {formatDateWithTime(article.published_at)}
+              {formatDateWithTime(article.published_at, locale)}
             </span>
           )}
         </div>
@@ -352,7 +354,7 @@ export default function ArticleCard({
             {article.title}
           </Link>
           <span className="text-xs text-gray-500 mt-1">
-            {article.read_time} min de lecture
+            {article.read_time} {locale === "en" ? "min read" : "min de lecture"}
           </span>
         </div>
       </article>
@@ -395,6 +397,7 @@ export default function ArticleCard({
               name={article.category.name}
               slug={article.category.slug}
               color={article.category.color}
+              locale={locale}
             />
           </div>
         )}
@@ -407,11 +410,11 @@ export default function ArticleCard({
           {article.excerpt}
         </p>
         <div className="flex items-center gap-2 text-xs text-gray-500">
-          <span>{article.read_time} min de lecture</span>
+          <span>{article.read_time} {locale === "en" ? "min read" : "min de lecture"}</span>
           {article.published_at && (
             <>
               <span>•</span>
-              <span>{timeAgo(article.published_at)}</span>
+              <span>{timeAgo(article.published_at, locale)}</span>
             </>
           )}
         </div>

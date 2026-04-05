@@ -8,11 +8,13 @@ import type { Comment } from "@/types";
 interface CommentSectionProps {
   articleId: string;
   initialComments: Comment[];
+  dict?: any;
 }
 
 export default function CommentSection({
   articleId,
   initialComments,
+  dict,
 }: CommentSectionProps) {
   const [comments, setComments] = useState<Comment[]>(initialComments);
   const [name, setName] = useState("");
@@ -62,7 +64,7 @@ export default function CommentSection({
     <section className="mt-10">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-bold font-sans">
-          Réactions ({comments.reduce((acc, c) => acc + 1 + (c.replies?.length || 0), 0)})
+          {dict?.comments?.title || "Réactions"} ({comments.reduce((acc, c) => acc + 1 + (c.replies?.length || 0), 0)})
         </h3>
         <button
           onClick={() => {
@@ -71,7 +73,7 @@ export default function CommentSection({
           }}
           className="px-4 py-2 bg-brand text-white text-sm font-bold font-sans rounded-md hover:bg-brand-dark transition-colors"
         >
-          Poster un commentaire
+          {dict?.comments?.write || "Poster un commentaire"}
         </button>
       </div>
 
@@ -85,6 +87,7 @@ export default function CommentSection({
                 setReplyTo(comment.id);
                 document.getElementById("comment-form")?.scrollIntoView({ behavior: "smooth" });
               }}
+              dict={dict}
             />
             {/* Réponses */}
             {comment.replies && comment.replies.length > 0 && (
@@ -107,14 +110,14 @@ export default function CommentSection({
         {replyTo && (
           <div className="mb-3 flex items-center gap-2">
             <span className="text-sm text-gray-500 font-sans">
-              Répondre à un commentaire
+              {dict?.comments?.replyTo || "Répondre à un commentaire"}
             </span>
             <button
               type="button"
               onClick={() => setReplyTo(null)}
               className="text-xs text-brand font-sans hover:underline"
             >
-              Annuler
+              {dict?.comments?.cancel || "Annuler"}
             </button>
           </div>
         )}
@@ -123,7 +126,7 @@ export default function CommentSection({
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Votre nom"
+            placeholder={dict?.comments?.name || "Votre nom"}
             required
             maxLength={100}
             className="px-4 py-2.5 text-sm border border-gray-300 rounded-md font-sans focus:outline-none focus:border-brand"
@@ -131,7 +134,7 @@ export default function CommentSection({
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="Votre commentaire..."
+            placeholder={dict?.comments?.message || "Votre commentaire..."}
             required
             maxLength={2000}
             rows={4}
@@ -142,11 +145,11 @@ export default function CommentSection({
             disabled={status === "loading"}
             className="self-start px-6 py-2.5 bg-brand text-white text-sm font-bold font-sans rounded-md hover:bg-brand-dark transition-colors disabled:opacity-50"
           >
-            {status === "loading" ? "Envoi..." : "Publier"}
+            {status === "loading" ? "..." : (dict?.comments?.submit || "Publier")}
           </button>
           {status === "success" && (
             <p className="text-sm text-green-600 font-sans">
-              Commentaire publié !
+              {dict?.comments?.success || "Commentaire publié !"}
             </p>
           )}
         </div>
@@ -159,10 +162,12 @@ function CommentItem({
   comment,
   onReply,
   isReply = false,
+  dict,
 }: {
   comment: Comment;
   onReply?: () => void;
   isReply?: boolean;
+  dict?: any;
 }) {
   const timeAgo = getTimeAgo(comment.created_at);
 
@@ -187,7 +192,7 @@ function CommentItem({
           onClick={onReply}
           className="mt-2 text-xs font-sans text-gray-500 hover:text-brand transition-colors"
         >
-          Répondre
+          {dict?.comments?.reply || "Répondre"}
         </button>
       )}
     </div>

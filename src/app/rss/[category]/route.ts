@@ -5,10 +5,12 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.nomask.fr";
 const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || "NoMask";
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ category: string }> }
 ) {
   const { category } = await params;
+  const { searchParams } = new URL(request.url);
+  const locale = searchParams.get("locale") === "en" ? "en" : "fr";
 
   // Vérifier que la catégorie existe
   const { data: cat } = await supabaseAdmin
@@ -25,7 +27,7 @@ export async function GET(
     .from("articles")
     .select(`*, category:categories(*), author:authors(*)`)
     .eq("status", "published")
-    .eq("locale", "fr")
+    .eq("locale", locale)
     .eq("category_id", cat.id)
     .order("published_at", { ascending: false })
     .limit(30);
@@ -39,23 +41,23 @@ export async function GET(
   xmlns:media="http://search.yahoo.com/mrss/">
   <channel>
     <title>${escapeXml(SITE_NAME)} — ${escapeXml(cat.name)}</title>
-    <link>${SITE_URL}/${cat.slug}</link>
-    <description>${escapeXml(cat.description || `Actualités ${cat.name} sur ${SITE_NAME}`)}</description>
-    <language>fr</language>
+    <link>${SITE_URL}/${locale}/${cat.slug}</link>
+    <description>${escapeXml(cat.description || (locale === "en" ? `${cat.name} news on ${SITE_NAME}` : `Actualités ${cat.name} sur ${SITE_NAME}`))}</description>
+    <language>${locale}</language>
     <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
-    <atom:link href="${SITE_URL}/rss/${cat.slug}.xml" rel="self" type="application/rss+xml"/>
+    <atom:link href="${SITE_URL}/rss/${cat.slug}?locale=${locale}" rel="self" type="application/rss+xml"/>
     <image>
       <url>${SITE_URL}/logo.png</url>
       <title>${escapeXml(SITE_NAME)} — ${escapeXml(cat.name)}</title>
-      <link>${SITE_URL}/${cat.slug}</link>
+      <link>${SITE_URL}/${locale}/${cat.slug}</link>
     </image>
     ${items
       .map(
         (article) => `
     <item>
       <title>${escapeXml(article.title)}</title>
-      <link>${SITE_URL}/${article.category?.slug}/${article.slug}</link>
-      <guid isPermaLink="true">${SITE_URL}/${article.category?.slug}/${article.slug}</guid>
+      <link>${SITE_URL}/${locale}/${article.category?.slug}/${article.slug}</link>
+      <guid isPermaLink="true">${SITE_URL}/${locale}/${article.category?.slug}/${article.slug}</guid>
       <description>${escapeXml(article.excerpt)}</description>
       <dc:creator>${escapeXml(article.author?.name || SITE_NAME)}</dc:creator>
       <category>${escapeXml(article.category?.name || "")}</category>

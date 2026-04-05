@@ -1,89 +1,67 @@
 import type { MetadataRoute } from "next";
 import { getAllArticleSlugs, getCategories, getAllAuthors } from "@/lib/queries";
+import { locales } from "@/i18n";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.nomask.fr";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const now = new Date();
+
+  // Helper: generate locale-variants for a path
+  function localeEntries(
+    path: string,
+    opts: { changeFrequency: MetadataRoute.Sitemap[0]["changeFrequency"]; priority: number; lastModified?: Date }
+  ): MetadataRoute.Sitemap {
+    return locales.map((locale) => ({
+      url: `${SITE_URL}/${locale}${path}`,
+      lastModified: opts.lastModified || now,
+      changeFrequency: opts.changeFrequency,
+      priority: opts.priority,
+      alternates: {
+        languages: Object.fromEntries(locales.map((l) => [l, `${SITE_URL}/${l}${path}`])),
+      },
+    }));
+  }
+
   // Pages statiques
   const staticPages: MetadataRoute.Sitemap = [
-    {
-      url: SITE_URL,
-      lastModified: new Date(),
-      changeFrequency: "hourly",
-      priority: 1,
-    },
-    {
-      url: `${SITE_URL}/a-propos`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.3,
-    },
-    {
-      url: `${SITE_URL}/auteurs`,
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 0.5,
-    },
-    {
-      url: `${SITE_URL}/contact`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.3,
-    },
-    {
-      url: `${SITE_URL}/recherche`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.2,
-    },
-    {
-      url: `${SITE_URL}/mentions-legales`,
-      lastModified: new Date(),
-      changeFrequency: "yearly",
-      priority: 0.1,
-    },
-    {
-      url: `${SITE_URL}/donnees-personnelles`,
-      lastModified: new Date(),
-      changeFrequency: "yearly",
-      priority: 0.1,
-    },
-    {
-      url: `${SITE_URL}/politique-cookies`,
-      lastModified: new Date(),
-      changeFrequency: "yearly",
-      priority: 0.1,
-    },
+    ...localeEntries("", { changeFrequency: "hourly", priority: 1 }),
+    ...localeEntries("/a-propos", { changeFrequency: "monthly", priority: 0.3 }),
+    ...localeEntries("/auteurs", { changeFrequency: "weekly", priority: 0.5 }),
+    ...localeEntries("/contact", { changeFrequency: "monthly", priority: 0.3 }),
+    ...localeEntries("/recherche", { changeFrequency: "monthly", priority: 0.2 }),
+    ...localeEntries("/mentions-legales", { changeFrequency: "yearly", priority: 0.1 }),
+    ...localeEntries("/donnees-personnelles", { changeFrequency: "yearly", priority: 0.1 }),
+    ...localeEntries("/politique-cookies", { changeFrequency: "yearly", priority: 0.1 }),
   ];
 
   // Pages de catégories
   const categories = await getCategories();
-  const categoryPages: MetadataRoute.Sitemap = categories.map((cat) => ({
-    url: `${SITE_URL}/${cat.slug}`,
-    lastModified: new Date(),
-    changeFrequency: "hourly" as const,
-    priority: 0.8,
-  }));
+  const categoryPages: MetadataRoute.Sitemap = categories.flatMap((cat) =>
+    localeEntries(`/${cat.slug}`, { changeFrequency: "hourly", priority: 0.8 })
+  );
 
-  // Pages d'articles
+  // Pages d'articles (both locales — the query returns all articles regardless of locale)
   const articleSlugs = await getAllArticleSlugs();
   const articlePages: MetadataRoute.Sitemap = articleSlugs
     .filter((a: any) => a.category?.slug)
-    .map((a: any) => ({
-      url: `${SITE_URL}/${a.category.slug}/${a.slug}`,
-      lastModified: a.updated_at ? new Date(a.updated_at) : a.published_at ? new Date(a.published_at) : undefined,
-      changeFrequency: "weekly" as const,
-      priority: 0.7,
-    }));
+    .flatMap((a: any) =>
+      locales.map((locale) => ({
+        url: `${SITE_URL}/${locale}/${a.category.slug}/${a.slug}`,
+        lastModified: a.updated_at ? new Date(a.updated_at) : a.published_at ? new Date(a.published_at) : undefined,
+        changeFrequency: "weekly" as const,
+        priority: 0.7,
+        alternates: {
+          languages: Object.fromEntries(locales.map((l) => [l, `${SITE_URL}/${l}/${a.category.slug}/${a.slug}`])),
+        },
+      }))
+    );
 
   // Pages d'auteurs
   const authors = await getAllAuthors();
-  const authorPages: MetadataRoute.Sitemap = authors.map((author) => ({
-    url: `${SITE_URL}/auteur/${author.slug}`,
-    lastModified: new Date(),
-    changeFrequency: "weekly" as const,
-    priority: 0.5,
-  }));
+  const authorPages: MetadataRoute.Sitemap = authors.flatMap((author) =>
+    localeEntries(`/auteur/${author.slug}`, { changeFrequency: "weekly", priority: 0.5 })
+  );
 
   return [...staticPages, ...categoryPages, ...articlePages, ...authorPages];
 }

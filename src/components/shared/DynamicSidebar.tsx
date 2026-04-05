@@ -8,15 +8,17 @@ interface DynamicSidebarProps {
   excludeIds?: string[];
   showNewsletter?: boolean;
   categorySlug?: string;
+  locale?: string;
 }
 
 export default async function DynamicSidebar({
   excludeIds = [],
   showNewsletter = true,
   categorySlug,
+  locale = "fr",
 }: DynamicSidebarProps) {
   const { alirePlus, thematique, definitions, thematiqueCategory } =
-    await getSidebarArticles(excludeIds, "fr", categorySlug);
+    await getSidebarArticles(excludeIds, locale, categorySlug);
 
   const thematiqueCat = thematique[0]?.category;
 
@@ -26,18 +28,18 @@ export default async function DynamicSidebar({
       {alirePlus.length > 0 && (
         <div>
           <h2 className="text-sm font-bold uppercase tracking-wide text-gray-500 mb-4 border-b-2 border-brand pb-2 font-sans">
-            Ne manquez pas
+            {locale === "en" ? "Don't miss" : "Ne manquez pas"}
           </h2>
           <div className="space-y-3">
             {alirePlus.map((article) => (
-              <SidebarImageCard key={article.id} article={article} />
+              <SidebarImageCard key={article.id} article={article} locale={locale} />
             ))}
           </div>
         </div>
       )}
 
       {/* ══════ NEWSLETTER ══════ */}
-      {showNewsletter && <Newsletter />}
+      {showNewsletter && <Newsletter locale={locale} />}
 
       {/* ══════ THÉMATIQUE (image + titre) ══════ */}
       {thematique.length > 0 && thematiqueCat && (
@@ -50,16 +52,16 @@ export default async function DynamicSidebar({
               {thematiqueCat.name}
             </h2>
             <Link
-              href={`/${thematiqueCat.slug}`}
+              href={`/${locale}/${thematiqueCat.slug}`}
               className="text-xs font-semibold hover:underline"
               style={{ color: thematiqueCat.color }}
             >
-              Voir tout →
+              {locale === "en" ? "See all →" : "Voir tout →"}
             </Link>
           </div>
           <div className="space-y-4">
             {thematique.map((article) => (
-              <SidebarImageCard key={article.id} article={article} />
+              <SidebarImageCard key={article.id} article={article} locale={locale} />
             ))}
           </div>
         </div>
@@ -96,7 +98,7 @@ export default async function DynamicSidebar({
             {definitions.map((article) => (
               <Link
                 key={article.id}
-                href={`/${article.category?.slug}/${article.slug}`}
+                href={`/${locale}/${article.category?.slug}/${article.slug}`}
                 className="flex items-start gap-2 group"
               >
                 <span
@@ -113,11 +115,13 @@ export default async function DynamicSidebar({
           </div>
           {definitions[0]?.category && (
             <Link
-              href={`/${definitions[0].category.slug}`}
+              href={`/${locale}/${definitions[0].category.slug}`}
               className="inline-block mt-4 text-xs font-semibold hover:underline"
               style={{ color: definitions[0].category.color }}
             >
-              Voir toutes les {definitions[0].category.name.toLowerCase()} →
+              {locale === "en"
+                ? `See all ${definitions[0].category.name.toLowerCase()} →`
+                : `Voir toutes les ${definitions[0].category.name.toLowerCase()} →`}
             </Link>
           )}
         </div>
@@ -126,7 +130,7 @@ export default async function DynamicSidebar({
       {/* ══════ PUBLICITÉ ══════ */}
       <div className="border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center h-64">
         <span className="text-gray-300 text-xs font-medium">
-          Espace publicitaire
+          {locale === "en" ? "Ad space" : "Espace publicitaire"}
         </span>
       </div>
     </aside>
@@ -134,10 +138,10 @@ export default async function DynamicSidebar({
 }
 
 /* ── Mini composant : lien texte avec badge catégorie ── */
-function SidebarTextLink({ article }: { article: ArticleWithRelations }) {
+function SidebarTextLink({ article, locale = "fr" }: { article: ArticleWithRelations; locale?: string }) {
   return (
     <Link
-      href={`/${article.category?.slug}/${article.slug}`}
+      href={`/${locale}/${article.category?.slug}/${article.slug}`}
       className="block group py-2 border-b border-gray-100 last:border-0"
     >
       {article.category && (
@@ -156,10 +160,10 @@ function SidebarTextLink({ article }: { article: ArticleWithRelations }) {
 }
 
 /* ── Mini composant : image carrée + titre horizontal (style image 3) ── */
-function SidebarImageCard({ article }: { article: ArticleWithRelations }) {
+function SidebarImageCard({ article, locale = "fr" }: { article: ArticleWithRelations; locale?: string }) {
   return (
     <Link
-      href={`/${article.category?.slug}/${article.slug}`}
+      href={`/${locale}/${article.category?.slug}/${article.slug}`}
       className="flex gap-3 group py-2 border-b border-gray-100 last:border-0"
     >
       {article.image_url && (

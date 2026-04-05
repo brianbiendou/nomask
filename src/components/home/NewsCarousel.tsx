@@ -10,11 +10,13 @@ import { timeAgo } from '@/lib/utils';
 interface NewsCarouselProps {
   articles: ArticleWithRelations[];
   autoPlayInterval?: number;
+  locale?: string;
 }
 
 export default function NewsCarousel({
   articles,
   autoPlayInterval = 6000,
+  locale = "fr",
 }: NewsCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -64,7 +66,7 @@ export default function NewsCarousel({
 
       {/* Slides */}
       {articles.map((article, index) => {
-        const articleUrl = `/${article.category?.slug}/${article.slug}`;
+        const articleUrl = `/${locale}/${article.category?.slug}/${article.slug}`;
         const isActive = index === safeIndex;
 
         return (
@@ -103,7 +105,7 @@ export default function NewsCarousel({
                   <div className="flex items-center gap-2 mb-3">
                     {article.category && (
                       <CategoryBadge
-                        name={`À LA UNE • ${article.category.name}`}
+                        name={`${locale === "en" ? "FEATURED" : "À LA UNE"} • ${article.category.name}`}
                         slug={article.category.slug}
                         color={article.category.color}
                         size="md"
@@ -112,7 +114,7 @@ export default function NewsCarousel({
                     )}
                     {article.published_at && (
                       <span className="text-xs text-gray-300 font-sans">
-                        {timeAgo(article.published_at)}
+                        {timeAgo(article.published_at, locale)}
                       </span>
                     )}
                   </div>
@@ -156,7 +158,7 @@ export default function NewsCarousel({
           <button
             onClick={() => goTo(safeIndex - 1)}
             className="absolute z-20 left-3 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer"
-            aria-label="Article précédent"
+            aria-label={locale === "en" ? "Previous article" : "Article précédent"}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -176,7 +178,7 @@ export default function NewsCarousel({
           <button
             onClick={() => goTo(safeIndex + 1)}
             className="absolute z-20 right-3 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer"
-            aria-label="Article suivant"
+            aria-label={locale === "en" ? "Next article" : "Article suivant"}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -208,7 +210,7 @@ export default function NewsCarousel({
                   ? 'bg-white w-6 h-2'
                   : 'bg-white/50 hover:bg-white/75 w-2 h-2'
               }`}
-              aria-label={`Aller au slide ${i + 1}`}
+              aria-label={locale === "en" ? `Go to slide ${i + 1}` : `Aller au slide ${i + 1}`}
               aria-current={i === safeIndex ? 'true' : undefined}
             />
           ))}

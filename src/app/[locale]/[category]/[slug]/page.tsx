@@ -19,27 +19,18 @@ import AuthorCard from "@/components/shared/AuthorCard";
 import CommentSection from "@/components/comments/CommentSection";
 import DynamicSidebar from "@/components/shared/DynamicSidebar";
 import { AdSenseInArticle, AdSenseDisplay } from "@/components/shared/AdSense";
+import { getDictionary, type Locale } from "@/i18n";
 
 export const revalidate = 300;
 
-/**
- * Supprime du contenu HTML les <img> dont le src correspond à l'image principale,
- * pour éviter les doublons avec le hero affiché au-dessus.
- */
 function deduplicateImages(html: string, mainImageUrl: string | null): string {
   if (!mainImageUrl || !html) return html;
-
-  // Extraire le nom de fichier de l'image principale pour une comparaison souple
   const mainFilename = mainImageUrl.split("/").pop()?.split("?")[0]?.toLowerCase() || "";
-
-  // Supprimer les <img> (et leur <figure> parent éventuel) qui correspondent à l'image principale
   return html
-    // Supprime les <figure> contenant l'image dupliquée
     .replace(/<figure[^>]*>[\s\S]*?<img[^>]*src=["']([^"']+)["'][^>]*>[\s\S]*?<\/figure>/gi, (match, src) => {
       const srcFilename = src.split("/").pop()?.split("?")[0]?.toLowerCase() || "";
       return srcFilename === mainFilename ? "" : match;
     })
-    // Supprime les <img> isolés qui correspondent
     .replace(/<img[^>]*src=["']([^"']+)["'][^>]*\/?>/gi, (match, src) => {
       const srcFilename = src.split("/").pop()?.split("?")[0]?.toLowerCase() || "";
       return srcFilename === mainFilename ? "" : match;
@@ -47,7 +38,7 @@ function deduplicateImages(html: string, mainImageUrl: string | null): string {
 }
 
 interface PageProps {
-  params: Promise<{ category: string; slug: string }>;
+  params: Promise<{ locale: string; category: string; slug: string }>;
 }
 
 export async function generateStaticParams() {
@@ -61,11 +52,11 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { slug } = await params;
-  const article = await getArticleBySlug(slug);
+  const { locale, slug } = await params;
+  const article = await getArticleBySlug(slug, locale);
   if (!article) return {};
 
-  const url = `${SITE_URL}/${article.category?.slug}/${article.slug}`;
+  const url = `${SITE_URL}/${locale}/${article.category?.slug}/${article.slug}`;
 
   return {
     title: article.seo_title || article.title,
@@ -81,14 +72,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       section: article.category?.name,
       authors: article.author?.name ? [article.author.name] : [],
       images: article.image_url
-        ? [
-            {
-              url: article.image_url,
-              width: 1200,
-              height: 630,
-              alt: article.image_caption || article.title,
-            },
-          ]
+        ? [{ url: article.image_url, width: 1200, height: 630, alt: article.image_caption || article.title }]
         : [],
     },
     twitter: {
@@ -104,27 +88,27 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function ArticlePage({ params }: PageProps) {
-  const { category: categorySlug, slug } = await params;
+  const { locale, category: categorySlug, slug } = await params;
+  const dict = await getDictionary(locale as Locale);
 
-  const article = await getArticleBySlug(slug);
+  const article = await getArticleBySlug(slug, locale);
   if (!article || article.category?.slug !== categorySlug) {
     notFound();
   }
 
   const [relatedArticles, comments, categoryArticles, latestArticles] = await Promise.all([
-    getRelatedArticles(article.id, article.category_id, "fr", 3),
+    getRelatedArticles(article.id, article.category_id, locale, 3),
     getCommentsByArticle(article.id),
-    getArticlesByCategory(categorySlug, "fr", 12),
-    getMostRecentArticles("fr", 12),
+    getArticlesByCategory(categorySlug, locale, 12),
+    getMostRecentArticles(locale, 12),
   ]);
 
-  // Exclure l'article actuel des listes
   const moreCategoryArticles = categoryArticles.filter((a) => a.id !== article.id).slice(0, 10);
-  const moreLatestArticles = latestArticles.filter(
-    (a) => a.id !== article.id && !moreCategoryArticles.some((c) => c.id === a.id)
-  ).slice(0, 10);
+  const moreLatestArticles = latestArticles
+    .filter((a) => a.id !== article.id && !moreCategoryArticles.some((c) => c.id === a.id))
+    .slice(0, 10);
 
-  const articleUrl = `/${article.category?.slug}/${article.slug}`;
+  const articleUrl = `/${locale}/${article.category?.slug}/${article.slug}`;
 
   return (
     <>
@@ -132,7 +116,7 @@ export default async function ArticlePage({ params }: PageProps) {
       <JsonLdFAQ article={article} />
       <JsonLdBreadcrumb
         items={[
-          { name: article.category?.name || "", url: `${SITE_URL}/${article.category?.slug}` },
+          { name: article.category?.name || "", url: `${SITE_URL}/${locale}/${article.category?.slug}` },
           { name: article.title, url: `${SITE_URL}${articleUrl}` },
         ]}
       />
@@ -142,10 +126,11 @@ export default async function ArticlePage({ params }: PageProps) {
           items={[
             {
               label: article.category?.name || "",
-              href: `/${article.category?.slug}`,
+              href: `/${locale}/${article.category?.slug}`,
             },
             { label: article.title },
           ]}
+          locale={locale}
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-4">
@@ -158,6 +143,7 @@ export default async function ArticlePage({ params }: PageProps) {
                   name={article.category.name}
                   slug={article.category.slug}
                   color={article.category.color}
+                  locale={locale}
                 />
               )}
 
@@ -173,7 +159,7 @@ export default async function ArticlePage({ params }: PageProps) {
               <div className="flex flex-wrap items-center gap-4 mt-4 text-sm text-gray-500 font-sans">
                 {article.author && (
                   <Link
-                    href={`/auteur/${article.author.slug}`}
+                    href={`/${locale}/auteur/${article.author.slug}`}
                     className="flex items-center gap-2 hover:text-red-600 transition-colors"
                   >
                     {article.author.avatar_url && (
@@ -189,33 +175,33 @@ export default async function ArticlePage({ params }: PageProps) {
                   </Link>
                 )}
                 <time dateTime={article.published_at || ""}>
-                  {article.published_at ? formatDate(article.published_at) : ""}
+                  {article.published_at ? formatDate(article.published_at, locale) : ""}
                 </time>
                 {article.published_at && (
                   <span className="text-gray-400">
-                    {timeAgo(article.published_at)}
+                    {timeAgo(article.published_at, locale)}
                   </span>
                 )}
                 {article.updated_at && article.published_at &&
                   new Date(article.updated_at).getTime() - new Date(article.published_at).getTime() > 60000 && (
                   <span className="text-gray-400 italic">
-                    · Mis à jour le{" "}
+                    · {dict.article.modifiedOn}{" "}
                     <time dateTime={article.updated_at}>
-                      {formatDate(article.updated_at)}
+                      {formatDate(article.updated_at, locale)}
                     </time>
                   </span>
                 )}
                 {article.read_time && (
-                  <span>{article.read_time} min de lecture</span>
+                  <span>{article.read_time} {dict.article.minuteRead}</span>
                 )}
               </div>
 
               {/* Partage */}
               <div className="mt-4 flex items-center gap-3 border-t border-b border-gray-200 py-3">
                 <span className="text-xs font-sans font-semibold uppercase text-gray-500 tracking-wide">
-                  Partager
+                  {dict.article.share}
                 </span>
-                <ShareButtons title={article.title} url={articleUrl} />
+                <ShareButtons title={article.title} url={articleUrl} dict={dict} />
               </div>
             </header>
 
@@ -257,16 +243,16 @@ export default async function ArticlePage({ params }: PageProps) {
             <div className="mt-8 pt-4 border-t border-gray-200">
               <div className="flex items-center gap-3">
                 <span className="text-xs font-sans font-semibold uppercase text-gray-500 tracking-wide">
-                  Partager cet article
+                  {dict.article.shareOn}
                 </span>
-                <ShareButtons title={article.title} url={articleUrl} />
+                <ShareButtons title={article.title} url={articleUrl} dict={dict} />
               </div>
             </div>
 
             {/* Info auteur */}
             {article.author && (
               <div className="mt-8">
-                <AuthorCard author={article.author} />
+                <AuthorCard author={article.author} locale={locale} />
               </div>
             )}
 
@@ -275,6 +261,7 @@ export default async function ArticlePage({ params }: PageProps) {
               <CommentSection
                 articleId={article.id}
                 initialComments={comments}
+                dict={dict}
               />
             </div>
           </div>
@@ -285,13 +272,13 @@ export default async function ArticlePage({ params }: PageProps) {
             {relatedArticles.length > 0 && (
               <div>
                 <h2 className="text-sm font-sans font-bold uppercase tracking-wide text-gray-500 mb-3 border-b-2 border-brand pb-2">
-                  À lire aussi
+                  {dict.article.relatedArticles}
                 </h2>
                 <div className="space-y-0">
                   {relatedArticles.map((related) => (
                     <Link
                       key={related.id}
-                      href={`/${related.category?.slug}/${related.slug}`}
+                      href={`/${locale}/${related.category?.slug}/${related.slug}`}
                       className="block group py-1 border-b border-gray-100 last:border-0"
                     >
                       {related.category && (
@@ -315,6 +302,7 @@ export default async function ArticlePage({ params }: PageProps) {
             <DynamicSidebar
               excludeIds={[article.id, ...relatedArticles.map((r) => r.id)]}
               categorySlug={article.category?.slug}
+              locale={locale}
             />
 
             {/* Annonce AdSense sidebar */}
@@ -329,7 +317,7 @@ export default async function ArticlePage({ params }: PageProps) {
         {moreCategoryArticles.length > 0 && (
           <section className="mt-8 pt-8 border-t border-gray-200">
             <h2 className="text-2xl font-black text-dark mb-6">
-              Les derniers articles{" "}
+              {dict.article.latestArticles}{" "}
               <span style={{ color: article.category?.color || "var(--color-brand)" }}>
                 {article.category?.name}
               </span>
@@ -338,7 +326,7 @@ export default async function ArticlePage({ params }: PageProps) {
               {moreCategoryArticles.map((a) => (
                 <Link
                   key={a.id}
-                  href={`/${a.category?.slug}/${a.slug}`}
+                  href={`/${locale}/${a.category?.slug}/${a.slug}`}
                   className="flex gap-4 group py-4 border-b border-gray-100"
                 >
                   {a.image_url && (
@@ -359,7 +347,7 @@ export default async function ArticlePage({ params }: PageProps) {
                     </h3>
                     {a.published_at && (
                       <p className="text-[11px] text-gray-400 mt-1.5">
-                        {formatDateWithTime(a.published_at)}
+                        {formatDateWithTime(a.published_at, locale)}
                       </p>
                     )}
                   </div>
@@ -376,13 +364,13 @@ export default async function ArticlePage({ params }: PageProps) {
         {moreLatestArticles.length > 0 && (
           <section className="mt-8 pt-8 border-t border-gray-200">
             <h2 className="text-2xl font-black text-dark mb-6">
-              Les dernières actualités
+              {dict.article.latestNews}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-0">
               {moreLatestArticles.map((a) => (
                 <Link
                   key={a.id}
-                  href={`/${a.category?.slug}/${a.slug}`}
+                  href={`/${locale}/${a.category?.slug}/${a.slug}`}
                   className="flex gap-4 group py-4 border-b border-gray-100"
                 >
                   {a.image_url && (
@@ -403,7 +391,7 @@ export default async function ArticlePage({ params }: PageProps) {
                     </h3>
                     {a.published_at && (
                       <p className="text-[11px] text-gray-400 mt-1.5">
-                        {formatDateWithTime(a.published_at)}
+                        {formatDateWithTime(a.published_at, locale)}
                       </p>
                     )}
                   </div>

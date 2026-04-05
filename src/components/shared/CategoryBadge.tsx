@@ -6,6 +6,7 @@ interface CategoryBadgeProps {
   color?: string;
   size?: "sm" | "md";
   asSpan?: boolean;
+  locale?: string;
 }
 
 export default function CategoryBadge({
@@ -14,6 +15,7 @@ export default function CategoryBadge({
   color = "#DC2626",
   size = "sm",
   asSpan = false,
+  locale = "fr",
 }: CategoryBadgeProps) {
   const sizeClasses =
     size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-3 py-1 text-xs";
@@ -30,7 +32,7 @@ export default function CategoryBadge({
 
   return (
     <Link
-      href={`/${slug}`}
+      href={`/${locale}/${slug}`}
       className={className}
       style={{ backgroundColor: color }}
     >

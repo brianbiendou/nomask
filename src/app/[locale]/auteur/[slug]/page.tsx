@@ -1,0 +1,164 @@
+import { notFound } from "next/navigation";
+import type { Metadata } from "next";
+import { getAuthorBySlug, getArticlesByAuthor, getAllAuthors } from "@/lib/queries";
+import ArticleCard from "@/components/articles/ArticleCard";
+import Breadcrumb from "@/components/shared/Breadcrumb";
+import DynamicSidebar from "@/components/shared/DynamicSidebar";
+import Image from "next/image";
+import { SITE_NAME, SITE_URL } from "@/lib/utils";
+import { AdSenseDisplay } from "@/components/shared/AdSense";
+import { getDictionary, type Locale } from "@/i18n";
+
+export const revalidate = 300;
+
+interface PageProps {
+  params: Promise<{ locale: string; slug: string }>;
+}
+
+export async function generateStaticParams() {
+  const authors = await getAllAuthors();
+  return authors.map((a) => ({ slug: a.slug }));
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { locale, slug } = await params;
+  const dict = await getDictionary(locale as Locale);
+  const author = await getAuthorBySlug(slug);
+  if (!author) return {};
+
+  return {
+    title: `${author.name} — ${dict.author.journalist}`,
+    description: author.bio || `${dict.author.articlesBy} ${author.name} ${locale === "en" ? "on" : "sur"} ${SITE_NAME}`,
+    openGraph: {
+      title: `${author.name} | ${SITE_NAME}`,
+      description: author.bio || `${dict.author.articlesBy} ${author.name}`,
+      url: `${SITE_URL}/${locale}/auteur/${author.slug}`,
+      type: "profile",
+    },
+    alternates: {
+      canonical: `${SITE_URL}/${locale}/auteur/${author.slug}`,
+    },
+  };
+}
+
+export default async function AuthorPage({ params }: PageProps) {
+  const { locale, slug } = await params;
+  const dict = await getDictionary(locale as Locale);
+  const author = await getAuthorBySlug(slug);
+  if (!author) notFound();
+
+  const articles = await getArticlesByAuthor(author.id, locale);
+
+  const sameAs: string[] = [];
+  if (author.twitter_url) sameAs.push(author.twitter_url);
+  if (author.linkedin_url) sameAs.push(author.linkedin_url);
+
+  const jsonLdPerson = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: author.name,
+    url: `${SITE_URL}/${locale}/auteur/${author.slug}`,
+    jobTitle: author.role,
+    description: author.bio || undefined,
+    image: author.avatar_url || undefined,
+    sameAs: sameAs.length > 0 ? sameAs : undefined,
+    worksFor: {
+      "@type": "NewsMediaOrganization",
+      name: SITE_NAME,
+      url: SITE_URL,
+    },
+  };
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdPerson) }}
+      />
+      <div className="max-w-255 mx-auto px-4 py-6">
+        <Breadcrumb
+          items={[
+            { label: dict.breadcrumb.authors, href: `/${locale}/auteurs` },
+            { label: author.name },
+          ]}
+          locale={locale}
+        />
+
+        {/* Profil auteur */}
+        <div className="flex flex-col md:flex-row items-start gap-6 mb-10 mt-4">
+          {author.avatar_url && (
+            <Image
+              src={author.avatar_url}
+              alt={author.name}
+              width={120}
+              height={120}
+              className="rounded-full"
+            />
+          )}
+          <div>
+            <h1 className="text-3xl font-black font-sans">{author.name}</h1>
+            {author.role && (
+              <p className="text-red-600 font-sans font-medium mt-1">
+                {author.role}
+              </p>
+            )}
+            {author.bio && (
+              <p className="mt-3 text-gray-600 font-serif leading-relaxed max-w-2xl">
+                {author.bio}
+              </p>
+            )}
+            <div className="flex gap-3 mt-3">
+              {author.twitter_url && (
+                <a
+                  href={author.twitter_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-gray-500 hover:text-red-600 font-sans"
+                >
+                  X / Twitter
+                </a>
+              )}
+              {author.linkedin_url && (
+                <a
+                  href={author.linkedin_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-gray-500 hover:text-red-600 font-sans"
+                >
+                  LinkedIn
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Articles de l'auteur */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
+            <h2 className="text-sm font-sans font-bold uppercase tracking-wide text-gray-500 mb-4 border-b pb-2">
+              {dict.author.articlesBy} {author.name} ({articles.length})
+            </h2>
+
+            {articles.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {articles.map((article) => (
+                  <ArticleCard key={article.id} article={article} locale={locale} />
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500 font-sans">{dict.author.noArticles}</p>
+            )}
+          </div>
+
+          <DynamicSidebar
+            excludeIds={articles.map((a) => a.id)}
+            locale={locale}
+          />
+        </div>
+
+        {/* Annonce AdSense */}
+        <AdSenseDisplay />
+      </div>
+    </>
+  );
+}

@@ -1,0 +1,199 @@
+{
+  "nav": {
+    "home": "Accueil",
+    "categories": {
+      "actus": "Actus",
+      "politique": "Politique",
+      "economie": "Économie",
+      "societe": "Société",
+      "tech": "Tech",
+      "culture": "Culture",
+      "science": "Science",
+      "sport": "Sport",
+      "style": "Style"
+    },
+    "subscribe": "+ S'ABONNER",
+    "search": "Rechercher…",
+    "searchPlaceholder": "Tapez votre recherche…",
+    "login": "Mon compte",
+    "logout": "Déconnexion",
+    "menu": "Menu",
+    "close": "Fermer"
+  },
+  "home": {
+    "mustRead": "À lire absolument",
+    "recap": "Le récap'",
+    "latestNews": "Les dernières actus",
+    "allNews": "Toute l'actualité",
+    "videos": "Vidéos",
+    "noMaskPlus": "NoMask+",
+    "live": "Direct",
+    "seeAll": "Voir tout",
+    "mostRead": "Les plus lus",
+    "thematic": {
+      "sport": "Sport",
+      "economie": "Économie",
+      "sciences": "Sciences"
+    }
+  },
+  "article": {
+    "featured": "À LA UNE",
+    "readMore": "Lire la suite",
+    "relatedArticles": "Articles liés",
+    "latestArticles": "Les dernières actus",
+    "publishedOn": "Publié le",
+    "modifiedOn": "Modifié le",
+    "byAuthor": "Par",
+    "minuteRead": "min de lecture",
+    "share": "Partager",
+    "shareOn": "Partager sur",
+    "copyLink": "Copier le lien",
+    "linkCopied": "Lien copié !",
+    "noArticles": "Aucun article trouvé.",
+    "tableOfContents": "Sommaire",
+    "latestNews": "Les dernières actualités"
+  },
+  "category": {
+    "allArticles": "Tous les articles",
+    "articlesIn": "Articles dans",
+    "noArticles": "Aucun article dans cette catégorie."
+  },
+  "search": {
+    "title": "Recherche",
+    "placeholder": "Rechercher un article…",
+    "results": "résultat(s) pour",
+    "noResults": "Aucun résultat trouvé.",
+    "searching": "Recherche en cours…"
+  },
+  "comments": {
+    "title": "Commentaires",
+    "count": "{count} commentaire(s)",
+    "write": "Écrire un commentaire",
+    "name": "Votre nom",
+    "email": "Votre email",
+    "message": "Votre commentaire…",
+    "submit": "Publier",
+    "reply": "Répondre",
+    "replyTo": "Réponse à",
+    "cancel": "Annuler",
+    "success": "Commentaire publié !",
+    "error": "Erreur lors de la publication."
+  },
+  "newsletter": {
+    "title": "Ne manquez rien.",
+    "description": "Recevez nos meilleurs articles directement dans votre boîte mail.",
+    "placeholder": "Votre adresse email",
+    "subscribe": "S'abonner",
+    "success": "Inscription réussie ! 🎉",
+    "alreadySubscribed": "Vous êtes déjà inscrit !",
+    "error": "Erreur lors de l'inscription."
+  },
+  "footer": {
+    "home": "Accueil",
+    "authors": "Auteurs",
+    "legal": "Mentions légales",
+    "privacy": "Données personnelles",
+    "cookies": "Politique cookies",
+    "contact": "Contact",
+    "copyright": "© {year} NoMask Media SAS. Tous droits réservés.",
+    "email": "contact@nomask.fr"
+  },
+  "breadcrumb": {
+    "home": "Accueil",
+    "authors": "Auteurs"
+  },
+  "sidebar": {
+    "dontMiss": "Ne manquez pas",
+    "newsletter": "Newsletter",
+    "thematic": "Thématique",
+    "learnMore": "En savoir plus"
+  },
+  "author": {
+    "team": "L'équipe NoMask",
+    "teamDescription": "Les journalistes et rédacteurs qui font NoMask au quotidien.",
+    "articles": "articles",
+    "seeAllArticles": "Voir tous ses articles",
+    "articlesBy": "Articles de",
+    "journalist": "Journaliste",
+    "noArticles": "Aucun article publié."
+  },
+  "about": {
+    "title": "À propos de NoMask",
+    "mission": "Notre mission",
+    "missionText": "NoMask est un média d'information indépendant, fondé en 2025. Notre mission : vous donner accès à une actualité fiable, vérifiée et sans filtre.",
+    "values": "Nos valeurs",
+    "independence": "Indépendance",
+    "independenceText": "Aucun actionnaire industriel, aucune pression politique. NoMask appartient à ses journalistes.",
+    "transparency": "Transparence",
+    "transparencyText": "Nos sources sont systématiquement citées. Nos erreurs sont corrigées publiquement.",
+    "accessibility": "Accessibilité",
+    "accessibilityText": "L'information doit être accessible à tous. Nos articles sont gratuits et sans paywall.",
+    "team": "Notre équipe",
+    "contactUs": "Nous contacter"
+  },
+  "contact": {
+    "title": "Contact",
+    "description": "Vous avez une question, une suggestion ou une demande de partenariat ? N'hésitez pas à nous contacter.",
+    "editorial": "Rédaction",
+    "partnerships": "Partenariats",
+    "dpo": "Délégué à la protection des données",
+    "general": "Contact général",
+    "address": "Adresse",
+    "company": "NoMask Media SAS"
+  },
+  "subscribe": {
+    "title": "Rejoignez NoMask+",
+    "description": "Soutenez un journalisme indépendant et accédez à du contenu exclusif.",
+    "benefit1": "Articles exclusifs",
+    "benefit1Text": "Accédez à des analyses approfondies réservées aux abonnés.",
+    "benefit2": "Sans publicité",
+    "benefit2Text": "Naviguez sans aucune publicité sur le site.",
+    "benefit3": "Newsletter premium",
+    "benefit3Text": "Recevez notre édition quotidienne premium par email.",
+    "benefit4": "Soutien direct",
+    "benefit4Text": "Votre abonnement finance directement notre rédaction.",
+    "monthly": "Mensuel",
+    "annual": "Annuel",
+    "twoYear": "Pack 2 ans",
+    "perMonth": "/mois",
+    "perYear": "/an",
+    "bestValue": "Meilleur rapport",
+    "choosePlan": "Choisir ce plan",
+    "faq": "Questions fréquentes"
+  },
+  "notFound": {
+    "title": "Page introuvable",
+    "description": "La page que vous cherchez n'existe pas ou a été déplacée.",
+    "goHome": "Retour à l'accueil",
+    "search": "Rechercher",
+    "recentArticles": "Articles récents"
+  },
+  "legal": {
+    "title": "Mentions légales"
+  },
+  "privacy": {
+    "title": "Données personnelles"
+  },
+  "cookiePolicy": {
+    "title": "Politique cookies"
+  },
+  "common": {
+    "seeAll": "Voir tout",
+    "readMore": "Lire la suite",
+    "loading": "Chargement…",
+    "error": "Une erreur est survenue.",
+    "back": "Retour",
+    "allNews": "Toute l'actualité",
+    "viewAll": "Voir tout"
+  },
+  "time": {
+    "justNow": "À l'instant",
+    "minutesAgo": "Il y a {n} min",
+    "hoursAgo": "Il y a {n}h",
+    "daysAgo": "Il y a {n}j"
+  },
+  "meta": {
+    "siteDescription": "NoMask — L'actualité sans filtre. Politique, économie, tech, culture, sport et style. L'information vérifiée, sans masque.",
+    "siteTagline": "L'actualité sans filtre"
+  }
+}

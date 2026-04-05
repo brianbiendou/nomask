@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Locale, Dictionary } from "@/i18n";
 
 const SOCIAL_LINKS = [
   { name: "YouTube", href: "#", icon: <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg> },
@@ -10,22 +11,26 @@ const SOCIAL_LINKS = [
   { name: "Threads", href: "#", icon: <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.472 12.01v-.017c.03-3.579.879-6.43 2.525-8.482C5.845 1.205 8.6.024 12.18 0h.014c2.746.02 5.043.725 6.826 2.098 1.677 1.29 2.858 3.13 3.509 5.467l-2.04.569c-1.104-3.96-3.898-5.984-8.304-6.015-2.91.022-5.11.936-6.54 2.717C4.307 6.504 3.616 8.914 3.59 12c.025 3.086.718 5.496 2.057 7.164 1.432 1.783 3.631 2.698 6.54 2.717 2.623-.02 4.358-.631 5.8-2.045 1.647-1.613 1.618-3.593 1.09-4.798-.31-.71-.873-1.3-1.634-1.75-.192 1.352-.622 2.446-1.287 3.263-.809.996-1.958 1.584-3.419 1.748-1.09.122-2.14-.018-3.05-.408-1.036-.444-1.856-1.186-2.345-2.132-.42-.812-.596-1.724-.513-2.637.164-1.822 1.282-3.292 2.992-3.936.9-.339 1.946-.471 3.113-.393 1 .066 1.88.293 2.63.676.025-.834-.01-1.623-.105-2.347l2.024-.31c.134.879.197 1.842.187 2.867.598.453 1.088.993 1.46 1.622.588.994.9 2.15.9 3.34-.003 2.585-1.032 4.724-2.978 6.188C17.075 23.365 14.89 23.98 12.186 24zm-.09-5.652c1.12-.122 1.946-.536 2.456-1.23.387-.528.677-1.244.852-2.107-.495-.257-1.074-.436-1.726-.533-.951-.142-1.87-.124-2.66.052-.94.21-1.63.682-1.862 1.265-.143.358-.126.728.051 1.07.264.51.821.87 1.568 1.015.459.09.94.107 1.39.05z"/></svg> },
 ];
 
-const FOOTER_LINKS = [
-  { name: "À propos", href: "/a-propos" },
-  { name: "Notre équipe", href: "/auteurs" },
-  { name: "Mentions légales", href: "/mentions-legales" },
-  { name: "Données personnelles", href: "/donnees-personnelles" },
-  { name: "Politique Cookies", href: "/politique-cookies" },
-  { name: "Contact", href: "/contact" },
-];
+interface FooterProps {
+  locale: Locale;
+  dict: Dictionary;
+}
 
-export default function Footer() {
+export default function Footer({ locale, dict }: FooterProps) {
+  const footerLinks = [
+    { name: dict.footer.home, href: `/${locale}` },
+    { name: dict.footer.authors, href: `/${locale}/auteurs` },
+    { name: dict.footer.legal, href: `/${locale}/mentions-legales` },
+    { name: dict.footer.privacy, href: `/${locale}/donnees-personnelles` },
+    { name: dict.footer.cookies, href: `/${locale}/politique-cookies` },
+    { name: dict.footer.contact, href: `/${locale}/contact` },
+  ];
+
   return (
     <footer className="bg-[#f5f5f5] border-t border-gray-200">
-      {/* Logo + réseaux sociaux */}
       <div className="max-w-255 mx-auto px-4 pt-10 pb-6">
         <div className="flex flex-col items-center gap-5">
-          <Link href="/" className="inline-block">
+          <Link href={`/${locale}`} className="inline-block">
             <span className="text-4xl font-black tracking-tight lowercase">
               <span className="text-brand">no</span>
               <span className="text-dark">mask</span>
@@ -46,10 +51,9 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* Liens légaux */}
       <div className="max-w-255 mx-auto px-4 pb-3">
         <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
-          {FOOTER_LINKS.map((item, i) => (
+          {footerLinks.map((item, i) => (
             <span key={item.name} className="flex items-center gap-2">
               <Link
                 href={item.href}
@@ -57,7 +61,7 @@ export default function Footer() {
               >
                 {item.name}
               </Link>
-              {i < FOOTER_LINKS.length - 1 && (
+              {i < footerLinks.length - 1 && (
                 <span className="text-gray-400 text-xs">·</span>
               )}
             </span>
@@ -65,12 +69,12 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* Copyright */}
       <div className="max-w-255 mx-auto px-4 pb-8">
         <p className="text-center text-[12px] text-gray-500 font-medium">
-          © {new Date().getFullYear()} NoMask, tous droits réservés —{" "}
-          <a href="mailto:redaction@nomask.fr" className="hover:text-brand transition-colors">
-            redaction@nomask.fr
+          {dict.footer.copyright.replace("{year}", String(new Date().getFullYear()))}
+          {" — "}
+          <a href={`mailto:${dict.footer.email}`} className="hover:text-brand transition-colors">
+            {dict.footer.email}
           </a>
         </p>
       </div>

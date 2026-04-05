@@ -5,11 +5,13 @@ import type { Author } from "@/types";
 interface AuthorCardProps {
   author: Author;
   showBio?: boolean;
+  locale?: string;
 }
 
 export default function AuthorCard({
   author,
   showBio = true,
+  locale = "fr",
 }: AuthorCardProps) {
   return (
     <div className="flex items-start gap-4 p-4 bg-light-bg rounded-lg border border-gray-200">
@@ -31,10 +33,10 @@ export default function AuthorCard({
           </p>
         )}
         <Link
-          href={`/auteur/${author.slug}`}
+          href={`/${locale}/auteur/${author.slug}`}
           className="inline-block mt-2 text-xs font-bold font-sans text-brand hover:underline"
         >
-          Voir tous ses articles
+          {locale === "en" ? "See all articles" : "Voir tous ses articles"}
         </Link>
       </div>
     </div>

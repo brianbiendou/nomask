@@ -13,7 +13,7 @@ const ARTICLE_SELECT = `
   subcategory:subcategories(*)
 `;
 
-export default function SearchResults() {
+export default function SearchResults({ locale = "fr" }: { locale?: string }) {
   const searchParams = useSearchParams();
   const q = searchParams.get("q") || "";
   const [results, setResults] = useState<ArticleWithRelations[]>([]);
@@ -32,7 +32,7 @@ export default function SearchResults() {
         .from("articles")
         .select(ARTICLE_SELECT)
         .eq("status", "published")
-        .eq("locale", "fr")
+        .eq("locale", locale)
         .or(`title.ilike.%${sanitized}%,excerpt.ilike.%${sanitized}%`)
         .order("published_at", { ascending: false })
         .limit(20);
@@ -49,28 +49,28 @@ export default function SearchResults() {
       {q && (
         <p className="text-gray-600 font-sans mb-6">
           {loading
-            ? "Recherche en cours..."
-            : `${results.length} résultat${results.length !== 1 ? "s" : ""} pour « ${q} »`}
+            ? (locale === "en" ? "Searching..." : "Recherche en cours...")
+            : `${results.length} ${locale === "en" ? "result" : "résultat"}${results.length !== 1 ? "s" : ""} ${locale === "en" ? "for" : "pour"} « ${q} »`}
         </p>
       )}
 
       {!q && (
         <p className="text-gray-500 font-sans">
-          Entrez un terme de recherche dans la barre ci-dessus.
+          {locale === "en" ? "Enter a search term in the bar above." : "Entrez un terme de recherche dans la barre ci-dessus."}
         </p>
       )}
 
       {results.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {results.map((article) => (
-            <ArticleCard key={article.id} article={article} />
+            <ArticleCard key={article.id} article={article} locale={locale} />
           ))}
         </div>
       )}
 
       {q && !loading && results.length === 0 && (
         <p className="text-gray-500 font-sans">
-          Aucun article trouvé. Essayez d&apos;autres mots-clés.
+          {locale === "en" ? "No articles found. Try other keywords." : "Aucun article trouvé. Essayez d'autres mots-clés."}
         </p>
       )}
     </>

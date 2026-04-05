@@ -4,14 +4,17 @@ import type { ArticleWithRelations } from "@/types";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.nomask.fr";
 const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || "NoMask";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const locale = searchParams.get("locale") === "en" ? "en" : "fr";
+
   const { data: articles } = await supabaseAdmin
     .from("articles")
     .select(
       `*, category:categories(*), author:authors(*)`
     )
     .eq("status", "published")
-    .eq("locale", "fr")
+    .eq("locale", locale)
     .order("published_at", { ascending: false })
     .limit(50);
 
@@ -25,24 +28,24 @@ export async function GET() {
   xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
   <channel>
     <title>${escapeXml(SITE_NAME)}</title>
-    <link>${SITE_URL}</link>
-    <description>L'information sans filtre — Actualités, analyses et décryptages</description>
-    <language>fr</language>
-    <copyright>© ${new Date().getFullYear()} ${escapeXml(SITE_NAME)}, tous droits réservés</copyright>
+    <link>${SITE_URL}/${locale}</link>
+    <description>${locale === "en" ? "News without filter — News, analysis and insights" : "L'information sans filtre — Actualités, analyses et décryptages"}</description>
+    <language>${locale}</language>
+    <copyright>© ${new Date().getFullYear()} ${escapeXml(SITE_NAME)}, ${locale === "en" ? "all rights reserved" : "tous droits réservés"}</copyright>
     <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
-    <atom:link href="${SITE_URL}/rss.xml" rel="self" type="application/rss+xml"/>
+    <atom:link href="${SITE_URL}/rss.xml?locale=${locale}" rel="self" type="application/rss+xml"/>
     <image>
       <url>${SITE_URL}/logo.png</url>
       <title>${escapeXml(SITE_NAME)}</title>
-      <link>${SITE_URL}</link>
+      <link>${SITE_URL}/${locale}</link>
     </image>
     ${items
       .map(
         (article) => `
     <item>
       <title>${escapeXml(article.title)}</title>
-      <link>${SITE_URL}/${article.category?.slug}/${article.slug}</link>
-      <guid isPermaLink="true">${SITE_URL}/${article.category?.slug}/${article.slug}</guid>
+      <link>${SITE_URL}/${locale}/${article.category?.slug}/${article.slug}</link>
+      <guid isPermaLink="true">${SITE_URL}/${locale}/${article.category?.slug}/${article.slug}</guid>
       <description>${escapeXml(article.excerpt)}</description>
       <dc:creator>${escapeXml(article.author?.name || SITE_NAME)}</dc:creator>
       <category>${escapeXml(article.category?.name || "")}</category>
@@ -52,7 +55,7 @@ export async function GET() {
       <news:news>
         <news:publication>
           <news:name>${escapeXml(SITE_NAME)}</news:name>
-          <news:language>fr</news:language>
+          <news:language>${locale}</news:language>
         </news:publication>
         <news:publication_date>${article.published_at ? new Date(article.published_at).toISOString() : ""}</news:publication_date>
         <news:title>${escapeXml(article.title)}</news:title>

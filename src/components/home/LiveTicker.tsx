@@ -4,9 +4,10 @@ import Link from "next/link";
 
 interface LiveTickerProps {
   articles: ArticleWithRelations[];
+  locale?: string;
 }
 
-export default function LiveTicker({ articles }: LiveTickerProps) {
+export default function LiveTicker({ articles, locale = "fr" }: LiveTickerProps) {
   if (articles.length === 0) return null;
 
   return (
@@ -17,7 +18,7 @@ export default function LiveTicker({ articles }: LiveTickerProps) {
           <span className="relative inline-flex rounded-full h-3 w-3 bg-brand"></span>
         </span>
         <h3 className="text-sm font-bold font-sans uppercase tracking-wider text-brand">
-          Direct
+          {locale === "en" ? "Live" : "Direct"}
         </h3>
       </div>
       <div className="space-y-4">
@@ -27,10 +28,10 @@ export default function LiveTicker({ articles }: LiveTickerProps) {
             className="flex gap-3 pb-4 border-b border-gray-100 last:border-0 last:pb-0"
           >
             <span className="text-xs font-bold text-brand font-sans shrink-0 pt-0.5">
-              {article.published_at && formatTime(article.published_at)}
+              {article.published_at && formatTime(article.published_at, locale)}
             </span>
             <Link
-              href={`/${article.category?.slug}/${article.slug}`}
+              href={`/${locale}/${article.category?.slug}/${article.slug}`}
               className="text-sm font-medium text-dark hover:text-brand transition-colors font-sans leading-tight"
             >
               {article.title}
@@ -39,10 +40,10 @@ export default function LiveTicker({ articles }: LiveTickerProps) {
         ))}
       </div>
       <Link
-        href="/international"
+        href={`/${locale}/international`}
         className="block mt-4 text-center text-xs font-bold font-sans uppercase tracking-wider text-brand border border-brand rounded-md py-2 hover:bg-brand hover:text-white transition-colors"
       >
-        Voir toute l&apos;actualité
+        {locale === "en" ? "View all news" : "Voir toute l'actualité"}
       </Link>
     </div>
   );

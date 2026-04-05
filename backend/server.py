@@ -44,7 +44,7 @@ app.add_middleware(
         "http://localhost:3000",
         "https://nomask.fr",
         "https://www.nomask.fr",
-        "https://api.nomask.fr",
+        "https://brett-unauthorised-extortionately.ngrok-free.dev",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -919,11 +919,13 @@ async def _yt_refresh_loop():
     logger.info("[YT] Boucle auto-refresh démarrée")
     last_refresh_hour: int | None = None
 
+    consecutive_errors = 0
     while True:
         await asyncio.sleep(300)  # Check toutes les 5 min
         try:
             cfg_res = _yt_supabase.table("youtube_config").select("*").eq("id", 1).execute()
             cfg = cfg_res.data[0] if cfg_res.data else {}
+            consecutive_errors = 0  # Reset on success
             if not cfg.get("enabled", False):
                 continue
 
@@ -938,7 +940,14 @@ async def _yt_refresh_loop():
                 await _yt_do_refresh()
 
         except Exception as e:
-            logger.error("[YT] Erreur boucle refresh : %s", e)
+            consecutive_errors += 1
+            if consecutive_errors <= 3:
+                logger.error("[YT] Erreur boucle refresh : %s", e)
+            elif consecutive_errors == 4:
+                logger.error("[YT] Erreurs répétées — logs réduits jusqu'à reconnexion")
+            # Back off: wait longer on repeated failures (max 30 min)
+            backoff = min(consecutive_errors * 60, 1800)
+            await asyncio.sleep(backoff)
 
 
 def _restart_yt_refresh():

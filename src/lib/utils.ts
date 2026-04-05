@@ -1,43 +1,47 @@
-export function formatDate(dateString: string): string {
+function loc(locale?: string) {
+  return locale === "en" ? "en-US" : "fr-FR";
+}
+
+export function formatDate(dateString: string, locale?: string): string {
   const date = new Date(dateString);
-  return date.toLocaleDateString("fr-FR", {
+  return date.toLocaleDateString(loc(locale), {
     day: "numeric",
     month: "long",
     year: "numeric",
   });
 }
 
-export function formatDateShort(dateString: string): string {
+export function formatDateShort(dateString: string, locale?: string): string {
   const date = new Date(dateString);
-  return date.toLocaleDateString("fr-FR", {
+  return date.toLocaleDateString(loc(locale), {
     day: "numeric",
     month: "short",
   });
 }
 
-export function formatDateWithTime(dateString: string): string {
+export function formatDateWithTime(dateString: string, locale?: string): string {
   const date = new Date(dateString);
-  const d = date.toLocaleDateString("fr-FR", {
+  const d = date.toLocaleDateString(loc(locale), {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
   });
-  const t = date.toLocaleTimeString("fr-FR", {
+  const t = date.toLocaleTimeString(loc(locale), {
     hour: "2-digit",
     minute: "2-digit",
   });
   return `${d} \u2022 ${t}`;
 }
 
-export function formatTime(dateString: string): string {
+export function formatTime(dateString: string, locale?: string): string {
   const date = new Date(dateString);
-  return date.toLocaleTimeString("fr-FR", {
+  return date.toLocaleTimeString(loc(locale), {
     hour: "2-digit",
     minute: "2-digit",
   });
 }
 
-export function timeAgo(dateString: string): string {
+export function timeAgo(dateString: string, locale?: string): string {
   const now = new Date();
   const date = new Date(dateString);
   const diffMs = now.getTime() - date.getTime();
@@ -45,11 +49,18 @@ export function timeAgo(dateString: string): string {
   const diffH = Math.floor(diffMin / 60);
   const diffD = Math.floor(diffH / 24);
 
-  if (diffMin < 1) return "À l'instant";
-  if (diffMin < 60) return `Il y a ${diffMin} min`;
-  if (diffH < 24) return `Il y a ${diffH}h`;
-  if (diffD < 7) return `Il y a ${diffD}j`;
-  return formatDate(dateString);
+  if (locale === "en") {
+    if (diffMin < 1) return "Just now";
+    if (diffMin < 60) return `${diffMin} min ago`;
+    if (diffH < 24) return `${diffH}h ago`;
+    if (diffD < 7) return `${diffD}d ago`;
+  } else {
+    if (diffMin < 1) return "À l'instant";
+    if (diffMin < 60) return `Il y a ${diffMin} min`;
+    if (diffH < 24) return `Il y a ${diffH}h`;
+    if (diffD < 7) return `Il y a ${diffD}j`;
+  }
+  return formatDate(dateString, locale);
 }
 
 export function getInitials(name: string): string {

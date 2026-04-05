@@ -1,0 +1,199 @@
+{
+  "nav": {
+    "home": "Home",
+    "categories": {
+      "actus": "News",
+      "politique": "Politics",
+      "economie": "Economy",
+      "societe": "Society",
+      "tech": "Tech",
+      "culture": "Culture",
+      "science": "Science",
+      "sport": "Sports",
+      "style": "Style"
+    },
+    "subscribe": "+ SUBSCRIBE",
+    "search": "Search…",
+    "searchPlaceholder": "Type your search…",
+    "login": "My account",
+    "logout": "Sign out",
+    "menu": "Menu",
+    "close": "Close"
+  },
+  "home": {
+    "mustRead": "Must read",
+    "recap": "The recap",
+    "latestNews": "Latest news",
+    "allNews": "All news",
+    "videos": "Videos",
+    "noMaskPlus": "NoMask+",
+    "live": "Live",
+    "seeAll": "See all",
+    "mostRead": "Most read",
+    "thematic": {
+      "sport": "Sports",
+      "economie": "Economy",
+      "sciences": "Sciences"
+    }
+  },
+  "article": {
+    "featured": "FEATURED",
+    "readMore": "Read more",
+    "relatedArticles": "Related articles",
+    "latestArticles": "Latest news",
+    "publishedOn": "Published on",
+    "modifiedOn": "Modified on",
+    "byAuthor": "By",
+    "minuteRead": "min read",
+    "share": "Share",
+    "shareOn": "Share on",
+    "copyLink": "Copy link",
+    "linkCopied": "Link copied!",
+    "noArticles": "No articles found.",
+    "tableOfContents": "Contents",
+    "latestNews": "Latest news"
+  },
+  "category": {
+    "allArticles": "All articles",
+    "articlesIn": "Articles in",
+    "noArticles": "No articles in this category."
+  },
+  "search": {
+    "title": "Search",
+    "placeholder": "Search for an article…",
+    "results": "result(s) for",
+    "noResults": "No results found.",
+    "searching": "Searching…"
+  },
+  "comments": {
+    "title": "Comments",
+    "count": "{count} comment(s)",
+    "write": "Write a comment",
+    "name": "Your name",
+    "email": "Your email",
+    "message": "Your comment…",
+    "submit": "Post",
+    "reply": "Reply",
+    "replyTo": "Reply to",
+    "cancel": "Cancel",
+    "success": "Comment posted!",
+    "error": "Error posting comment."
+  },
+  "newsletter": {
+    "title": "Don't miss a thing.",
+    "description": "Get our best articles straight to your inbox.",
+    "placeholder": "Your email address",
+    "subscribe": "Subscribe",
+    "success": "Successfully subscribed! 🎉",
+    "alreadySubscribed": "You're already subscribed!",
+    "error": "Error subscribing."
+  },
+  "footer": {
+    "home": "Home",
+    "authors": "Authors",
+    "legal": "Legal notice",
+    "privacy": "Privacy policy",
+    "cookies": "Cookie policy",
+    "contact": "Contact",
+    "copyright": "© {year} NoMask Media SAS. All rights reserved.",
+    "email": "contact@nomask.fr"
+  },
+  "breadcrumb": {
+    "home": "Home",
+    "authors": "Authors"
+  },
+  "sidebar": {
+    "dontMiss": "Don't miss",
+    "newsletter": "Newsletter",
+    "thematic": "Thematic",
+    "learnMore": "Learn more"
+  },
+  "author": {
+    "team": "The NoMask Team",
+    "teamDescription": "The journalists and editors who make NoMask every day.",
+    "articles": "articles",
+    "seeAllArticles": "See all articles",
+    "articlesBy": "Articles by",
+    "journalist": "Journalist",
+    "noArticles": "No published articles."
+  },
+  "about": {
+    "title": "About NoMask",
+    "mission": "Our mission",
+    "missionText": "NoMask is an independent news media outlet, founded in 2025. Our mission: give you access to reliable, verified and unfiltered news.",
+    "values": "Our values",
+    "independence": "Independence",
+    "independenceText": "No industrial shareholders, no political pressure. NoMask belongs to its journalists.",
+    "transparency": "Transparency",
+    "transparencyText": "Our sources are systematically cited. Our mistakes are publicly corrected.",
+    "accessibility": "Accessibility",
+    "accessibilityText": "Information must be accessible to all. Our articles are free and without paywall.",
+    "team": "Our team",
+    "contactUs": "Contact us"
+  },
+  "contact": {
+    "title": "Contact",
+    "description": "Have a question, suggestion or partnership request? Don't hesitate to contact us.",
+    "editorial": "Editorial",
+    "partnerships": "Partnerships",
+    "dpo": "Data Protection Officer",
+    "general": "General contact",
+    "address": "Address",
+    "company": "NoMask Media SAS"
+  },
+  "subscribe": {
+    "title": "Join NoMask+",
+    "description": "Support independent journalism and get access to exclusive content.",
+    "benefit1": "Exclusive articles",
+    "benefit1Text": "Access in-depth analyses reserved for subscribers.",
+    "benefit2": "Ad-free",
+    "benefit2Text": "Browse the site without any ads.",
+    "benefit3": "Premium newsletter",
+    "benefit3Text": "Get our daily premium edition by email.",
+    "benefit4": "Direct support",
+    "benefit4Text": "Your subscription directly funds our newsroom.",
+    "monthly": "Monthly",
+    "annual": "Annual",
+    "twoYear": "2-year pack",
+    "perMonth": "/month",
+    "perYear": "/year",
+    "bestValue": "Best value",
+    "choosePlan": "Choose this plan",
+    "faq": "Frequently asked questions"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "description": "The page you're looking for doesn't exist or has been moved.",
+    "goHome": "Back to home",
+    "search": "Search",
+    "recentArticles": "Recent articles"
+  },
+  "legal": {
+    "title": "Legal notice"
+  },
+  "privacy": {
+    "title": "Privacy policy"
+  },
+  "cookiePolicy": {
+    "title": "Cookie policy"
+  },
+  "common": {
+    "seeAll": "See all",
+    "readMore": "Read more",
+    "loading": "Loading…",
+    "error": "An error occurred.",
+    "back": "Back",
+    "allNews": "All news",
+    "viewAll": "View all"
+  },
+  "time": {
+    "justNow": "Just now",
+    "minutesAgo": "{n} min ago",
+    "hoursAgo": "{n}h ago",
+    "daysAgo": "{n}d ago"
+  },
+  "meta": {
+    "siteDescription": "NoMask — Unfiltered news. Politics, economy, tech, culture, sports and style. Verified information, no mask.",
+    "siteTagline": "Unfiltered news"
+  }
+}
