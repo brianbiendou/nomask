@@ -15,6 +15,31 @@ import aiohttp
 from slugify import slugify
 from bs4 import BeautifulSoup
 
+# Regex pour détecter les caractères CJK (chinois, japonais, coréen)
+_CJK_PATTERN = re.compile(
+    r'[\u4e00-\u9fff'
+    r'\u3400-\u4dbf'
+    r'\u2e80-\u2eff'
+    r'\u3000-\u303f'
+    r'\uff00-\uffef'
+    r'\u3040-\u309f'
+    r'\u30a0-\u30ff'
+    r']+'
+)
+
+
+def _has_cjk(text: str) -> bool:
+    """Vérifie si un texte contient des caractères CJK."""
+    return bool(_CJK_PATTERN.search(text)) if text else False
+
+
+def _strip_cjk(text: str) -> str:
+    """Supprime les caractères CJK et la ponctuation fullwidth d'un texte."""
+    cleaned = _CJK_PATTERN.sub('', text)
+    cleaned = re.sub(r'[\uff01-\uff5e]+', '', cleaned)  # ponctuation fullwidth
+    cleaned = re.sub(r'\s{2,}', ' ', cleaned)
+    return cleaned.strip()
+
 from config import (
     DEFAULT_PERSPECTIVE,
     OLLAMA_BASE_URL,
@@ -73,6 +98,12 @@ async def _call_ollama(system_prompt: str, user_prompt: str, temperature: float 
 
 SYSTEM_REWRITE_CONTENT = """Tu es un rédacteur journalistique francophone expert. Tu dois RÉÉCRIRE INTÉGRALEMENT un article pour le site NoMask.
 
+⚠️ RÈGLE ABSOLUE N°1 — LANGUE :
+- Tu DOIS écrire EXCLUSIVEMENT en FRANÇAIS. C'est NON NÉGOCIABLE.
+- Il est INTERDIT d'utiliser des caractères chinois (汉字), japonais, coréens ou tout autre alphabet non-latin.
+- Chaque mot de ta réponse doit être en alphabet latin français.
+- Si tu génères ne serait-ce qu'UN SEUL caractère non-latin, ta réponse sera REJETÉE.
+
 RÈGLES STRICTES :
 - Réécris TOUT le texte avec tes propres mots, ne copie AUCUNE phrase telle quelle
 - Garde TOUTES les informations factuelles (noms, chiffres, dates, lieux)
@@ -85,9 +116,15 @@ RÈGLES STRICTES :
 - SUPPRIME tout texte promotionnel du site source (ex: "Installer Numerama", "Découvrez notre comparateur", "Retrouvez-nous sur…", liens vers d'autres médias)
 - Si l'article cite un autre média comme source, remplace par "selon nos informations" ou "d'après les dernières informations disponibles"
 - Le seul site mentionné doit être NoMask
-- Point de vue : {perspective}"""
+- Point de vue : {perspective}
+
+RAPPEL FINAL : FRANÇAIS UNIQUEMENT. Zéro caractère chinois/japonais/coréen."""
 
 SYSTEM_REWRITE_TITLE = """Tu es un rédacteur de titres d'articles expert en français. Tu dois réécrire le titre donné.
+
+⚠️ RÈGLE ABSOLUE — LANGUE : ÉCRIS UNIQUEMENT EN FRANÇAIS.
+Il est STRICTEMENT INTERDIT d'utiliser des caractères chinois (汉字), japonais, coréens ou tout alphabet non-latin.
+Chaque caractère de ta réponse doit être en alphabet latin français. Sinon ta réponse sera REJETÉE.
 
 RÈGLES :
 - Garde toutes les informations clés (noms, chiffres, dates)
@@ -95,9 +132,13 @@ RÈGLES :
 - Maximum 100 caractères
 - Ne mets PAS de guillemets autour du titre
 - Réponds UNIQUEMENT avec le nouveau titre, rien d'autre
+- AUCUN caractère chinois, japonais ou coréen
 - Point de vue : {perspective}"""
 
 SYSTEM_REWRITE_EXCERPT = """Tu es un rédacteur journalistique francophone. Tu dois réécrire le chapô (extrait) d'un article.
+
+⚠️ RÈGLE ABSOLUE — LANGUE : ÉCRIS UNIQUEMENT EN FRANÇAIS.
+Il est STRICTEMENT INTERDIT d'utiliser des caractères chinois (汉字), japonais, coréens ou tout alphabet non-latin.
 
 RÈGLES :
 - Réécris avec tes propres mots
@@ -105,6 +146,7 @@ RÈGLES :
 - Maximum 250 caractères
 - 1 à 2 phrases maximum
 - Réponds UNIQUEMENT avec le nouveau chapô
+- AUCUN caractère chinois, japonais ou coréen
 - Point de vue : {perspective}"""
 
 
@@ -123,18 +165,33 @@ async def rewrite_content(
 
 {content_text[:6000]}
 
-Réécris cet article INTÉGRALEMENT en HTML (h2, h3, p, strong, em). Garde toutes les infos factuelles mais reformule tout avec tes propres mots."""
+Réécris cet article INTÉGRALEMENT en HTML (h2, h3, p, strong, em). Garde toutes les infos factuelles mais reformule tout avec tes propres mots.
+IMPORTANT : Écris UNIQUEMENT en français. AUCUN caractère chinois/japonais/coréen."""
 
-    result, used_ollama = await _call_ollama(system, user_prompt, temperature=0.7)
+    # Jusqu'à 2 tentatives si du CJK est détecté
+    for attempt in range(2):
+        result, used_ollama = await _call_ollama(system, user_prompt, temperature=0.7)
 
-    if not result:
-        # Fallback : retourne le contenu original nettoyé
-        return content_html, False
+        if not result:
+            return content_html, False
 
-    # Nettoie le résultat (enlève les blocs code markdown si présents)
-    result = re.sub(r'^```html?\s*\n?', '', result)
-    result = re.sub(r'\n?```\s*$', '', result)
-    result = result.strip()
+        # Nettoie le résultat (enlève les blocs code markdown si présents)
+        result = re.sub(r'^```html?\s*\n?', '', result)
+        result = re.sub(r'\n?```\s*$', '', result)
+        result = result.strip()
+
+        # Validation anti-CJK : si du chinois est détecté, nettoyer ou réessayer
+        if _has_cjk(result):
+            print(f"  [WARN] Contenu contient du CJK (tentative {attempt+1}/2), nettoyage...")
+            result = _strip_cjk(result)
+            if not _has_cjk(result):
+                break
+            if attempt == 0:
+                continue  # Réessayer
+            # Dernier recours : nettoyage forcé
+            result = _strip_cjk(result)
+        else:
+            break
 
     # Vérifie que c'est bien du HTML
     if not any(tag in result for tag in ["<p>", "<h2>", "<h3>", "<div>"]):
@@ -148,15 +205,28 @@ Réécris cet article INTÉGRALEMENT en HTML (h2, h3, p, strong, em). Garde tout
 async def rewrite_title(title: str, perspective: str = DEFAULT_PERSPECTIVE) -> tuple[str, bool]:
     """Réécrit le titre via Ollama. Retourne (titre, used_ollama)."""
     system = SYSTEM_REWRITE_TITLE.format(perspective=perspective)
-    user_prompt = f"Titre original : {title}"
+    user_prompt = f"Titre original : {title}\nRéécris ce titre UNIQUEMENT en français (aucun caractère chinois/japonais/coréen)."
 
-    result, used_ollama = await _call_ollama(system, user_prompt, temperature=0.8)
+    # Jusqu'à 2 tentatives si du CJK est détecté
+    for attempt in range(2):
+        result, used_ollama = await _call_ollama(system, user_prompt, temperature=0.8)
 
-    if not result:
-        return title, False
+        if not result:
+            return title, False
 
-    result = result.strip().strip('"').strip("'").strip("«").strip("»")
-    result = result.split("\n")[0].strip()
+        result = result.strip().strip('"').strip("'").strip("«").strip("»")
+        result = result.split("\n")[0].strip()
+
+        # Validation anti-CJK
+        if _has_cjk(result):
+            print(f"  [WARN] Titre contient du CJK (tentative {attempt+1}/2), nettoyage...")
+            result = _strip_cjk(result)
+            if not _has_cjk(result) and len(result) >= 10:
+                break
+            if attempt == 0:
+                continue  # Réessayer
+        else:
+            break
 
     if len(result) > 150 or len(result) < 10:
         return title, False
@@ -167,15 +237,28 @@ async def rewrite_title(title: str, perspective: str = DEFAULT_PERSPECTIVE) -> t
 async def rewrite_excerpt(excerpt: str, perspective: str = DEFAULT_PERSPECTIVE) -> tuple[str, bool]:
     """Réécrit l'extrait via Ollama. Retourne (extrait, used_ollama)."""
     system = SYSTEM_REWRITE_EXCERPT.format(perspective=perspective)
-    user_prompt = f"Chapô original : {excerpt}"
+    user_prompt = f"Chapô original : {excerpt}\nRéécris UNIQUEMENT en français (aucun caractère chinois/japonais/coréen)."
 
-    result, used_ollama = await _call_ollama(system, user_prompt, temperature=0.7)
+    # Jusqu'à 2 tentatives si du CJK est détecté
+    for attempt in range(2):
+        result, used_ollama = await _call_ollama(system, user_prompt, temperature=0.7)
 
-    if not result:
-        return excerpt, False
+        if not result:
+            return excerpt, False
 
-    result = result.strip().strip('"').strip("'")
-    result = result.split("\n")[0].strip()
+        result = result.strip().strip('"').strip("'")
+        result = result.split("\n")[0].strip()
+
+        # Validation anti-CJK
+        if _has_cjk(result):
+            print(f"  [WARN] Extrait contient du CJK (tentative {attempt+1}/2), nettoyage...")
+            result = _strip_cjk(result)
+            if not _has_cjk(result) and len(result) >= 20:
+                break
+            if attempt == 0:
+                continue  # Réessayer
+        else:
+            break
 
     if len(result) > 300:
         result = result[:297] + "..."
