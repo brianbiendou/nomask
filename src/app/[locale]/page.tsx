@@ -619,7 +619,7 @@ export default async function HomePage({ params }: PageProps) {
             </Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
-            {filteredBuyingGuides.slice(0, 4).map((article) => (
+            {buyingGuides.slice(0, 4).map((article) => (
               <Link
                 key={article.id}
                 href={`/${locale}/${article.category?.slug}/${article.slug}`}
