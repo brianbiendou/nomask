@@ -26,6 +26,8 @@ services:
     environment:
       # Ollama tourne sur le HOST (pas dans Docker) → host.docker.internal
       OLLAMA_URL: http://host.docker.internal:11434
+      OLLAMA_MODEL: mistral:7b
+      OLLAMA_TIMEOUT: "300"
     # Accès au réseau hôte pour joindre Ollama
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -46,5 +48,5 @@ services:
     logging:
       driver: json-file
       options:
-        max-size: "10m"
+        max-size: "2m"
         max-file: "3"
