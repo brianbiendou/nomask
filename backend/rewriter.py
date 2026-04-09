@@ -40,6 +40,77 @@ def _strip_cjk(text: str) -> str:
     cleaned = re.sub(r'\s{2,}', ' ', cleaned)
     return cleaned.strip()
 
+
+# ── Nettoyage mécanique des noms de sources ──────────────────────
+# Liste des médias/sources à supprimer des contenus réécrits
+_SOURCE_NAMES = [
+    "Numerama", "Frandroid", "Le Monde", "Les Échos", "Le Figaro",
+    "BFM", "BFMTV", "BFM TV", "TF1", "01net", "Clubic",
+    "Le Parisien", "Libération", "L'Express", "Le Point",
+    "France Info", "France 24", "RFI", "Europe 1", "RTL",
+    "CNews", "LCI", "20 Minutes", "Huffington Post", "HuffPost",
+    "Ouest-France", "Sud Ouest", "La Tribune", "Challenges",
+    "Les Numériques", "Tom's Guide", "Tom's Hardware",
+    "Lesnumeriques", "PhonAndroid", "FrAndroid",
+    "Journal du Geek", "Presse-citron", "Siècle Digital",
+    "L'Usine Digitale", "ZDNet", "The Verge", "TechCrunch",
+    "Engadget", "Ars Technica", "Wired", "Mashable",
+]
+
+# Patterns promotionnels des sites sources
+_PROMO_PATTERNS = [
+    r"(?i)(?:installez?|téléchargez?|ajoutez?|retrouvez|découvrez)\s+(?:l'app(?:lication)?|le site)?\s*(?:" + "|".join(re.escape(s) for s in _SOURCE_NAMES) + r")",
+    r"(?i)(?:sur|chez|selon|via|d'après|rapporte?|indique)\s+(?:" + "|".join(re.escape(s) for s in _SOURCE_NAMES) + r")",
+    r"(?i)raccourci sur l'actualité technologique",
+    r"(?i)(?:" + "|".join(re.escape(s) for s in _SOURCE_NAMES) + r")\s+(?:à votre écran|sur votre|rapporte|indique|révèle|annonce)",
+    r"(?i)abonnez[- ]vous\s+(?:à|au|sur)\s+\S+",
+    r"(?i)(?:notre|nos)\s+(?:comparateur|newsletter|application)",
+    r"(?i)restez connectés au futur",
+]
+_PROMO_REGEXES = [re.compile(p) for p in _PROMO_PATTERNS]
+
+
+def _strip_source_names(html: str) -> str:
+    """Supprime mécaniquement les noms de médias sources du contenu HTML."""
+    from bs4 import BeautifulSoup
+
+    soup = BeautifulSoup(html, "html.parser")
+
+    # Supprimer les paragraphes entièrement promotionnels
+    for tag in soup.find_all(["p", "div", "span", "em", "strong"]):
+        text = tag.get_text(strip=True)
+        if not text:
+            continue
+        # Si un paragraphe entier est promotionnel, le supprimer
+        if tag.name == "p":
+            for regex in _PROMO_REGEXES:
+                if regex.search(text):
+                    # Vérifier que c'est un petit paragraphe promo, pas un gros paragraphe informatif
+                    if len(text) < 200:
+                        tag.decompose()
+                        break
+
+    result = str(soup)
+
+    # Remplacer les mentions de sources dans le texte restant
+    for source in _SOURCE_NAMES:
+        # "selon Numerama" → "selon nos informations"
+        result = re.sub(
+            rf"(?i)(?:selon|d'après|rapporte|indique|révèle)\s+{re.escape(source)}",
+            "selon nos informations",
+            result,
+        )
+        # Remplacer le nom seul par "NoMask" seulement s'il n'est pas dans une URL
+        result = re.sub(
+            rf"(?<![/.]){re.escape(source)}(?![./\w])",
+            "NoMask",
+            result,
+        )
+
+    # Nettoyer les doubles espaces résultants
+    result = re.sub(r'\s{2,}', ' ', result)
+    return result
+
 from config import (
     DEFAULT_PERSPECTIVE,
     OLLAMA_BASE_URL,
@@ -199,6 +270,9 @@ IMPORTANT : Écris UNIQUEMENT en français. AUCUN caractère chinois/japonais/co
         paragraphs = result.split("\n\n")
         result = "".join(f"<p>{p.strip()}</p>" for p in paragraphs if p.strip())
 
+    # Nettoyage mécanique : supprimer les noms de sources/médias
+    result = _strip_source_names(result)
+
     return result, True
 
 
@@ -230,6 +304,10 @@ async def rewrite_title(title: str, perspective: str = DEFAULT_PERSPECTIVE) -> t
 
     if len(result) > 150 or len(result) < 10:
         return title, False
+
+    # Nettoyage mécanique des noms de sources dans le titre
+    for source in _SOURCE_NAMES:
+        result = re.sub(rf"(?i){re.escape(source)}", "NoMask", result)
 
     return result, True
 
@@ -265,6 +343,10 @@ async def rewrite_excerpt(excerpt: str, perspective: str = DEFAULT_PERSPECTIVE) 
 
     if len(result) < 20:
         return excerpt, False
+
+    # Nettoyage mécanique des noms de sources dans l'extrait
+    for source in _SOURCE_NAMES:
+        result = re.sub(rf"(?i){re.escape(source)}", "NoMask", result)
 
     return result, True
 

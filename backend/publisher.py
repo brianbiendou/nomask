@@ -69,6 +69,7 @@ def publish_article(
     seo_title: str | None = None,
     seo_description: str | None = None,
     seo_keywords: list[str] | None = None,
+    source_domain: str | None = None,
     is_featured: bool = False,
     is_breaking: bool = False,
     read_time: int = 5,
@@ -102,6 +103,7 @@ def publish_article(
         "seo_title": seo_title or title,
         "seo_description": seo_description or excerpt[:160],
         "seo_keywords": seo_keywords or tags or [],
+        "source_domain": source_domain,
     }
 
     try:

@@ -17,7 +17,6 @@ import {
   X,
   UserCircle,
   Menu,
-  ChevronDown,
 } from "lucide-react";
 import type { Locale, Dictionary } from "@/i18n";
 
@@ -46,62 +45,6 @@ const CATEGORY_HREFS: Record<string, string> = {
 };
 
 const CATEGORY_KEYS = ["actus", "politique", "economie", "societe", "tech", "culture", "science", "sport", "style"] as const;
-
-/* ─── Language Switcher ─── */
-function LanguageSwitcher({ locale }: { locale: Locale }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const pathname = usePathname();
-  const router = useRouter();
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  const switchTo = (target: Locale) => {
-    setOpen(false);
-    document.cookie = `NEXT_LOCALE=${target};path=/;max-age=${60 * 60 * 24 * 365};SameSite=Lax`;
-    const segments = pathname.split("/");
-    if (segments[1] === "fr" || segments[1] === "en") {
-      segments[1] = target;
-    }
-    router.push(segments.join("/"));
-  };
-
-  return (
-    <div ref={ref} className="relative">
-      <button
-        onClick={() => setOpen(!open)}
-        className="flex items-center gap-1 px-2 py-1.5 text-sm text-gray-600 hover:text-brand transition-colors rounded"
-        aria-label="Language"
-      >
-        <Globe className="w-4 h-4" />
-        <span className="text-xs font-medium uppercase">{locale}</span>
-        <ChevronDown className="w-3 h-3" />
-      </button>
-      {open && (
-        <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 min-w-[130px]">
-          <button
-            onClick={() => switchTo("fr")}
-            className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 transition-colors ${locale === "fr" ? "font-bold text-brand" : "text-gray-700"}`}
-          >
-            🇫🇷 Français
-          </button>
-          <button
-            onClick={() => switchTo("en")}
-            className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 transition-colors ${locale === "en" ? "font-bold text-brand" : "text-gray-700"}`}
-          >
-            🇬🇧 English
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
 
 /* ─── Header ─── */
 interface HeaderProps {
@@ -194,7 +137,6 @@ export default function Header({ locale, dict }: HeaderProps) {
 
             {!isScrolled && (
               <>
-                <LanguageSwitcher locale={locale} />
                 <button className="p-2 text-gray-500 hover:text-brand transition-colors" aria-label={dict.nav.login}>
                   <UserCircle className="w-5 h-5" />
                 </button>
@@ -253,7 +195,6 @@ export default function Header({ locale, dict }: HeaderProps) {
               >
                 <Search className="w-4 h-4" />
               </button>
-              <LanguageSwitcher locale={locale} />
               <button className="p-1.5 text-gray-500 hover:text-brand transition-colors" aria-label={dict.nav.login}>
                 <UserCircle className="w-4 h-4" />
               </button>
@@ -284,7 +225,6 @@ export default function Header({ locale, dict }: HeaderProps) {
               </Link>
             ))}
             <div className="px-3 py-3 border-t border-gray-100 mt-2">
-              <LanguageSwitcher locale={locale} />
             </div>
           </div>
         </nav>

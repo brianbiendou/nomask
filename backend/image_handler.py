@@ -254,6 +254,18 @@ def extract_content_images(content_html: str) -> list[str]:
     return blocks
 
 
+def extract_urls_from_image_blocks(image_blocks: list[str]) -> list[str]:
+    """Extrait les URLs src des blocs HTML d'images pour les ajouter au téléchargement."""
+    import re
+    urls = []
+    for block in image_blocks:
+        matches = re.findall(r'src="([^"]+)"', block)
+        for url in matches:
+            if url.startswith("http"):
+                urls.append(url)
+    return urls
+
+
 def inject_images_into_content(rewritten_html: str, image_blocks: list[str]) -> str:
     """Insère les images extraites du contenu original dans le contenu réécrit,
     réparties entre les paragraphes."""

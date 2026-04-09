@@ -201,6 +201,24 @@ export async function getArticlesBySubcategory(
   return data as ArticleWithRelations[];
 }
 
+export async function getArticlesBySource(
+  sourceDomain: string,
+  locale: string = "fr",
+  limit: number = 4
+) {
+  const { data, error } = await supabase
+    .from("articles")
+    .select(ARTICLE_SELECT)
+    .eq("status", "published")
+    .eq("locale", locale)
+    .ilike("source_domain", `%${sourceDomain}%`)
+    .order("published_at", { ascending: false })
+    .limit(limit);
+
+  if (error) return [];
+  return data as ArticleWithRelations[];
+}
+
 export async function getCategories() {
   const { data, error } = await supabase
     .from("categories")

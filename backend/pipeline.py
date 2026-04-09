@@ -6,8 +6,8 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from scraper import ScrapedArticle, scrape_batch
-from image_handler import process_images, replace_image_urls, ensure_bucket_exists, extract_content_images, inject_images_into_content
-from rewriter import rewrite_content, rewrite_title, rewrite_excerpt, generate_slug, classify_article
+from image_handler import process_images, replace_image_urls, ensure_bucket_exists, extract_content_images, inject_images_into_content, extract_urls_from_image_blocks
+from rewriter import rewrite_content, rewrite_title, rewrite_excerpt, generate_slug, classify_article, _strip_source_names
 from publisher import (
     get_categories,
     get_authors,
@@ -172,8 +172,14 @@ async def process_single_article(
     original_image_blocks = extract_content_images(scraped.content_html)
     print(f"  {len(original_image_blocks)} images trouvées dans le contenu original")
 
+    # Extraire les URLs des images de contenu pour les télécharger aussi
+    content_image_urls = extract_urls_from_image_blocks(original_image_blocks)
+    all_image_urls = list(set(scraped.image_urls + content_image_urls))
+    if content_image_urls:
+        print(f"  {len(content_image_urls)} URLs d'images de contenu ajoutées au téléchargement")
+
     content_task = rewrite_content(scraped.content_html, scraped.content_text, perspective)
-    images_task = process_images(scraped.image_urls, new_slug)
+    images_task = process_images(all_image_urls, new_slug)
 
     (new_content, content_ollama), url_map = await asyncio.gather(content_task, images_task)
 
@@ -199,6 +205,9 @@ async def process_single_article(
 
     # 4. Remplacer les URLs d'images dans le contenu
     new_content = replace_image_urls(new_content, url_map)
+
+    # 4b. Nettoyage final : supprimer toute mention de sources/médias restante
+    new_content = _strip_source_names(new_content)
 
     # Image principale
     main_image = None
@@ -247,6 +256,7 @@ async def process_single_article(
         seo_title=new_title,
         seo_description=new_excerpt[:160],
         seo_keywords=scraped.tags[:5] if scraped.tags else None,
+        source_domain=urlparse(scraped.url).netloc,
         read_time=read_time,
         published_at=pub_date.isoformat(),
     ))

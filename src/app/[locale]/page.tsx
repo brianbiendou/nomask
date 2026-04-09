@@ -2,6 +2,7 @@ import {
   getArticles,
   getArticlesByCategory,
   getArticlesBySubcategory,
+  getArticlesBySource,
   getYouTubeCurrentVideos,
 } from "@/lib/queries";
 import ArticleCard from "@/components/articles/ArticleCard";
@@ -26,14 +27,16 @@ export default async function HomePage({ params }: PageProps) {
     techArticles,
     sportArticles,
     economieArticles,
+    scienceArticles,
     buyingGuides,
     ytVideos,
   ] = await Promise.all([
     getArticles({ locale, limit: 50 }),
-    getArticlesByCategory("tech", locale, 4),
-    getArticlesByCategory("sport", locale, 3),
-    getArticlesByCategory("economie", locale, 3),
-    getArticlesBySubcategory("tech", "guides-achat", locale, 4),
+    getArticlesByCategory("tech", locale, 10),
+    getArticlesByCategory("sport", locale, 10),
+    getArticlesByCategory("economie", locale, 10),
+    getArticlesByCategory("science", locale, 10),
+    getArticlesBySource("frandroid", locale, 4),
     getYouTubeCurrentVideos(),
   ]);
 
@@ -78,6 +81,7 @@ export default async function HomePage({ params }: PageProps) {
   const filteredTechArticles = techArticles.filter((a) => !usedIds.has(a.id));
   const filteredSportArticles = sportArticles.filter((a) => !usedIds.has(a.id));
   const filteredEconomieArticles = economieArticles.filter((a) => !usedIds.has(a.id));
+  const filteredScienceArticles = scienceArticles.filter((a) => !usedIds.has(a.id));
   const filteredBuyingGuides = buyingGuides.filter((a) => !usedIds.has(a.id));
 
   // Trending : toujours les articles les plus récents (dynamique à chaque publication)
@@ -500,8 +504,8 @@ export default async function HomePage({ params }: PageProps) {
             <ThemeColumn
               title={dict.home.thematic.sciences}
               icon={<svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a4 4 0 0 0-4 4c0 4 4 6 4 6s4-2 4-6a4 4 0 0 0-4-4z" /><path d="M12 12v10" /><path d="M8 18c-2 0-4-1-4-3 0-1.5 1.5-3 4-3" /><path d="M16 18c2 0 4-1 4-3 0-1.5-1.5-3-4-3" /></svg>}
-              slug="tech"
-              articles={filteredTechArticles}
+              slug="science"
+              articles={filteredScienceArticles}
               locale={locale}
             />
           </div>
@@ -685,7 +689,7 @@ function ThemeColumn({
         <h3 className="text-[22px] font-black text-brand lowercase tracking-tight">{title}</h3>
       </div>
       <div className="space-y-4">
-        {articles.map((article) => (
+        {articles.slice(0, 3).map((article) => (
           <Link
             key={article.id}
             href={`/${locale}/${article.category?.slug}/${article.slug}`}
