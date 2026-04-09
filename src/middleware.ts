@@ -2,21 +2,10 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-const locales = ["fr", "en"];
+const locales = ["fr"];
 const defaultLocale = "fr";
 
-function getLocaleFromRequest(request: NextRequest): string {
-  // 1. Cookie preference
-  const cookieLocale = request.cookies.get("NEXT_LOCALE")?.value;
-  if (cookieLocale && locales.includes(cookieLocale)) return cookieLocale;
-
-  // 2. Accept-Language header
-  const acceptLang = request.headers.get("accept-language") || "";
-  for (const lang of acceptLang.split(",")) {
-    const code = lang.split(";")[0].trim().substring(0, 2).toLowerCase();
-    if (locales.includes(code)) return code;
-  }
-
+function getLocaleFromRequest(_request: NextRequest): string {
   return defaultLocale;
 }
 
@@ -44,6 +33,14 @@ export async function middleware(request: NextRequest) {
   const pathnameHasLocale = locales.some(
     (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
   );
+
+  // Redirect /en/* to /fr/*
+  if (pathname.startsWith("/en/") || pathname === "/en") {
+    const rest = pathname.replace(/^\/en/, "");
+    const newUrl = new URL(`/fr${rest}`, request.url);
+    newUrl.search = request.nextUrl.search;
+    return NextResponse.redirect(newUrl, 301);
+  }
 
   if (!pathnameHasLocale) {
     // Redirect to locale-prefixed URL
