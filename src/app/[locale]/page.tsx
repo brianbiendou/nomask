@@ -2,7 +2,6 @@ import {
   getArticles,
   getArticlesByCategory,
   getArticlesBySubcategory,
-  getArticlesBySource,
   getYouTubeCurrentVideos,
 } from "@/lib/queries";
 import ArticleCard from "@/components/articles/ArticleCard";
@@ -36,7 +35,7 @@ export default async function HomePage({ params }: PageProps) {
     getArticlesByCategory("sport", locale, 10),
     getArticlesByCategory("economie", locale, 10),
     getArticlesByCategory("science", locale, 10),
-    getArticlesBySource("frandroid", locale, 4),
+    getArticlesByCategory("tech", locale, 6),
     getYouTubeCurrentVideos(),
   ]);
 

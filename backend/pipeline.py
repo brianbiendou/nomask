@@ -35,7 +35,7 @@ def _normalize_url(url: str) -> str:
 
 
 def _load_processed_urls() -> dict[str, dict]:
-    """Charge les URLs déjà traitées. Format: {normalized_url: {source_domain, processed_at}}"""
+    """Charge les URLs déjà traitées. Format: {normalized_url: {processed_at}}"""
     if _PROCESSED_URLS_FILE.exists():
         try:
             return json.loads(_PROCESSED_URLS_FILE.read_text(encoding="utf-8"))
@@ -58,11 +58,10 @@ def is_url_already_processed(url: str) -> bool:
     return _normalize_url(url) in data
 
 
-def mark_url_processed(url: str, source_domain: str = "") -> None:
-    """Marque une URL source comme traitée."""
+def mark_url_processed(url: str) -> None:
+    """Marque une URL source comme traitée (anti-doublon)."""
     data = _load_processed_urls()
     data[_normalize_url(url)] = {
-        "source_domain": source_domain,
         "processed_at": datetime.now(timezone.utc).isoformat(),
     }
     _save_processed_urls(data)
@@ -256,7 +255,6 @@ async def process_single_article(
         seo_title=new_title,
         seo_description=new_excerpt[:160],
         seo_keywords=scraped.tags[:5] if scraped.tags else None,
-        source_domain=urlparse(scraped.url).netloc,
         read_time=read_time,
         published_at=pub_date.isoformat(),
     ))
@@ -265,8 +263,7 @@ async def process_single_article(
         return None
 
     # 10. Marquer l'URL source comme traitée (anti-doublon pour les prochains runs)
-    source_domain = urlparse(scraped.url).netloc
-    mark_url_processed(scraped.url, source_domain)
+    mark_url_processed(scraped.url)
 
     # Ajouter les infos Ollama au résultat
     ollama_used = title_ollama and excerpt_ollama and content_ollama
