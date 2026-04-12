@@ -28,16 +28,15 @@ def main():
         epilog="""
 Exemples:
   python main.py https://example.com/article1 https://example.com/article2
-  python main.py --file urls.txt --perspective "analyse critique"
+  python main.py --file urls.txt
   python main.py --discover https://www.numerama.com --hours 24
-  python main.py --perspective "neutre, factuel et informatif" URL1 URL2
+  python main.py --perspective "vulgarisation accessible" URL1 URL2
 
-Points de vue disponibles:
-  - neutre et factuel (défaut)
-  - analyse critique
-  - vulgarisation accessible
-  - opinion engagée
-  - tech enthusiast
+Perspective par défaut : analyse critique et tech savvy (voir config.py)
+Autres perspectives possibles :
+  - "vulgarisation accessible" (grand public)
+  - "opinion engagée" (éditorial)
+  - "neutre et factuel" (dépêche)
         """,
     )
     parser.add_argument("urls", nargs="*", help="URLs des articles à traiter")

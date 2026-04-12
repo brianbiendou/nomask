@@ -6,7 +6,7 @@ import { getAllAuthors, getArticlesByAuthor } from "@/lib/queries";
 import { SITE_NAME, SITE_URL } from "@/lib/utils";
 import { getDictionary, type Locale } from "@/i18n";
 
-export const revalidate = 300;
+export const revalidate = 86400; // 24h — page statique
 
 interface PageProps {
   params: Promise<{ locale: string }>;

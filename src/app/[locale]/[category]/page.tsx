@@ -12,7 +12,7 @@ import { SITE_NAME, SITE_URL } from "@/lib/utils";
 import { AdSenseDisplay } from "@/components/shared/AdSense";
 import { getDictionary, type Locale } from "@/i18n";
 
-export const revalidate = 300;
+export const revalidate = 1800; // 30 min — nouvelles articles par catégorie
 
 const VALID_CATEGORIES = [
   "international",

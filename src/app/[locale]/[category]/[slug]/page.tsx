@@ -21,7 +21,7 @@ import DynamicSidebar from "@/components/shared/DynamicSidebar";
 import { AdSenseInArticle, AdSenseDisplay } from "@/components/shared/AdSense";
 import { getDictionary, type Locale } from "@/i18n";
 
-export const revalidate = 300;
+export const revalidate = 86400; // 24h — le contenu d'un article ne change pas après publication
 
 function deduplicateImages(html: string, mainImageUrl: string | null): string {
   if (!mainImageUrl || !html) return html;

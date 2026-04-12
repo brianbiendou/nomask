@@ -12,7 +12,7 @@ import { formatDateShort, formatDateWithTime } from "@/lib/utils";
 import { AdSenseDisplay } from "@/components/shared/AdSense";
 import { getDictionary, type Locale } from "@/i18n";
 
-export const revalidate = 300;
+export const revalidate = 900; // 15 min — page d'accueil actualité
 
 interface PageProps {
   params: Promise<{ locale: string }>;

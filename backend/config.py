@@ -21,7 +21,14 @@ SUPABASE_ANON_KEY = os.environ.get("NEXT_PUBLIC_SUPABASE_ANON_KEY", "")
 STORAGE_BUCKET = "article-images"
 
 # Point de vue par défaut pour la réécriture
-DEFAULT_PERSPECTIVE = "neutre et factuel, style journalistique professionnel"
+DEFAULT_PERSPECTIVE = (
+    "analyse critique et tech savvy — décrypte les implications cachées, "
+    "questionne les narratifs officiels, révèle ce que la presse mainstream oublie, "
+    "avec une plume directe et engagée pour un lecteur curieux et exigeant"
+)
+
+# Seuil de similarité sémantique (0-100) au-delà duquel un article est considéré doublon
+SIMILARITY_THRESHOLD = int(os.environ.get("SIMILARITY_THRESHOLD", "75"))
 
 # Ollama (LLM local)
 # En Docker : OLLAMA_URL=http://host.docker.internal:11434

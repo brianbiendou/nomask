@@ -9,7 +9,7 @@ import { SITE_NAME, SITE_URL } from "@/lib/utils";
 import { AdSenseDisplay } from "@/components/shared/AdSense";
 import { getDictionary, type Locale } from "@/i18n";
 
-export const revalidate = 300;
+export const revalidate = 3600; // 1h — les articles d'un auteur évoluent peu
 
 interface PageProps {
   params: Promise<{ locale: string; slug: string }>;

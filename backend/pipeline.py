@@ -17,7 +17,8 @@ from publisher import (
     delete_article_by_slug,
     estimate_read_time,
 )
-from config import MAX_CONCURRENT_SCRAPES
+from similarity import check_topic_similarity_safe, set_recent_articles, get_recent_articles
+from config import MAX_CONCURRENT_SCRAPES, SIMILARITY_THRESHOLD
 
 
 # ────────────────────────────────────────
@@ -102,6 +103,31 @@ SUBCATEGORY_HINTS = {
 }
 
 
+def _load_recent_articles_from_supabase(limit: int = 200) -> list[dict]:
+    """Charge les titres+extraits des articles récents depuis Supabase pour la similarité."""
+    try:
+        from publisher import _get_supabase
+        sb = _get_supabase()
+        result = sb.table("articles") \
+            .select("title, excerpt") \
+            .eq("status", "published") \
+            .eq("locale", "fr") \
+            .order("published_at", desc=True) \
+            .limit(limit) \
+            .execute()
+        return result.data or []
+    except Exception as e:
+        print(f"  [SIMILARITY] Impossible de charger les articles récents: {e}")
+        return []
+
+
+def _count_words_in_html(html: str) -> int:
+    """Compte le nombre de mots dans un contenu HTML."""
+    from bs4 import BeautifulSoup
+    text = BeautifulSoup(html, "html.parser").get_text(separator=" ")
+    return len(text.split())
+
+
 async def process_single_article(
     scraped: ScrapedArticle,
     categories: dict[str, str],
@@ -117,10 +143,21 @@ async def process_single_article(
     print(f"[PIPELINE] {scraped.title[:70]}...")
     print(f"  URL: {scraped.url}")
 
-    # 0. Anti-doublon : vérifier si cette URL source a déjà été traitée
+    # 0. Anti-doublon URL : vérifier si cette URL source a déjà été traitée
     if not force and is_url_already_processed(scraped.url):
         print(f"  [SKIP] URL source déjà traitée: {scraped.url}")
         return None
+
+    # 0b. Anti-doublon SÉMANTIQUE : vérifier si le sujet est déjà couvert
+    if not force:
+        is_dup, sim_score, sim_reason = await check_topic_similarity_safe(
+            scraped.title, scraped.excerpt or ""
+        )
+        if is_dup:
+            print(f"  [SKIP] Sujet déjà couvert (score={sim_score}/100): {sim_reason[:80]}")
+            return None
+        elif sim_score >= 50:
+            print(f"  [INFO] Sujet proche d'un existant (score={sim_score}/100, seuil={SIMILARITY_THRESHOLD}) — on continue")
 
     # 1. Déterminer la catégorie — d'abord par métadonnées/URL, puis classification IA
     cat_slug = CATEGORY_MAP.get(scraped.category_hint or "", "")
@@ -191,6 +228,16 @@ async def process_single_article(
     if original_image_blocks:
         new_content = inject_images_into_content(new_content, original_image_blocks)
         print(f"  Images réinjectées dans le contenu réécrit")
+
+    # Vérification de la longueur minimale (800 mots pour la qualité éditoriale AdSense)
+    word_count = _count_words_in_html(new_content)
+    print(f"  Longueur: {word_count} mots")
+    if word_count < 400:
+        print(f"  [ABORT] Contenu trop court ({word_count} mots < 400 minimum absolu) — article NON publié")
+        return {"_ollama_failed": True, "url": scraped.url}
+    elif word_count < 800:
+        print(f"  [WARN] Contenu sous le seuil recommandé ({word_count} mots < 800)")
+
     print(f"  Nouveau titre: {new_title[:70]}...")
     print(f"  {len(url_map)} images uploadées sur Supabase Storage")
 
@@ -279,7 +326,7 @@ async def process_single_article(
 
 async def run_pipeline(
     urls: list[str],
-    perspective: str = "neutre et factuel",
+    perspective: str | None = None,
     force: bool = False,
 ) -> list[dict]:
     """
@@ -288,23 +335,31 @@ async def run_pipeline(
     2. Traite chaque article (images + réécriture + publication)
     Les articles les plus récents dans la liste auront le published_at le plus récent.
     """
+    from config import DEFAULT_PERSPECTIVE
+    if perspective is None:
+        perspective = DEFAULT_PERSPECTIVE
+
     print(f"\n{'#'*60}")
     print(f"# NoMask Pipeline — {len(urls)} articles")
-    print(f"# Perspective: {perspective}")
+    print(f"# Perspective: {perspective[:80]}...")
     print(f"{'#'*60}")
 
     # S'assurer que le bucket existe
     loop = asyncio.get_event_loop()
     await loop.run_in_executor(None, ensure_bucket_exists)
 
-    # Charger les référentiels Supabase EN PARALLÈLE
-    print("\n[INIT] Chargement des catégories et auteurs...")
-    categories, authors, subcategories = await asyncio.gather(
+    # Charger les référentiels Supabase EN PARALLÈLE (catégories + auteurs + articles récents pour similarité)
+    print("\n[INIT] Chargement des référentiels...")
+    categories, authors, subcategories, recent_articles = await asyncio.gather(
         loop.run_in_executor(None, get_categories),
         loop.run_in_executor(None, get_authors),
         loop.run_in_executor(None, get_subcategories),
+        loop.run_in_executor(None, _load_recent_articles_from_supabase, 200),
     )
     print(f"  {len(categories)} catégories, {len(authors)} auteurs, {len(subcategories)} sous-catégories")
+
+    # Initialiser le cache de similarité sémantique
+    set_recent_articles(recent_articles)
 
     # Étape 1 : Scraping parallèle
     print(f"\n[SCRAPE] Scraping de {len(urls)} articles...")
@@ -343,6 +398,9 @@ async def run_pipeline(
             else:
                 ollama_consecutive_failures = 0  # reset
                 results.append(r)
+                # Mettre à jour le cache de similarité avec l'article qui vient d'être publié
+                updated_cache = [{"title": r.get("title", ""), "excerpt": r.get("excerpt", "")}] + get_recent_articles()
+                set_recent_articles(updated_cache[:200])
         except Exception as e:
             print(f"  [ERREUR] Article échoué: {e}")
             ollama_consecutive_failures += 1
