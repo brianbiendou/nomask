@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import {
   getCategoryBySlug,
   getArticlesByCategory,
+  getMostRecentArticles,
 } from "@/lib/queries";
 import ArticleCard from "@/components/articles/ArticleCard";
 import Breadcrumb from "@/components/shared/Breadcrumb";
@@ -74,12 +75,19 @@ export default async function CategoryPage({ params }: PageProps) {
     notFound();
   }
 
-  const [category, articles] = await Promise.all([
+  const [category, articles, recentFallback] = await Promise.all([
     getCategoryBySlug(categorySlug),
     getArticlesByCategory(categorySlug, locale, 20),
+    getMostRecentArticles(locale, 6),
   ]);
 
   if (!category) notFound();
+
+  const isFr = locale === "fr";
+  const displayArticles = articles.length > 0 ? articles : [];
+  const fallbackArticles = articles.length === 0
+    ? recentFallback.filter((a) => a.category?.slug !== categorySlug)
+    : [];
 
   return (
     <div className="max-w-255 mx-auto px-4 py-6">
@@ -99,25 +107,36 @@ export default async function CategoryPage({ params }: PageProps) {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
-          {articles.length > 0 ? (
+          {displayArticles.length > 0 ? (
             <div className="space-y-8">
-              <ArticleCard article={articles[0]} locale={locale} />
+              <ArticleCard article={displayArticles[0]} locale={locale} />
               <AdSenseDisplay />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {articles.slice(1).map((article) => (
+                {displayArticles.slice(1).map((article) => (
                   <ArticleCard key={article.id} article={article} locale={locale} />
                 ))}
               </div>
             </div>
           ) : (
-            <p className="text-gray-500 font-sans">
-              {dict.category.noArticles}
-            </p>
+            <div>
+              <p className="text-gray-500 font-sans mb-8">
+                {isFr
+                  ? `Aucun article dans cette rubrique pour le moment. Découvrez nos dernières publications :`
+                  : `No articles in this section yet. Discover our latest publications:`}
+              </p>
+              {fallbackArticles.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {fallbackArticles.map((article) => (
+                    <ArticleCard key={article.id} article={article} locale={locale} />
+                  ))}
+                </div>
+              )}
+            </div>
           )}
         </div>
 
         <DynamicSidebar
-          excludeIds={articles.map((a) => a.id)}
+          excludeIds={displayArticles.map((a) => a.id)}
           categorySlug={categorySlug}
           locale={locale}
         />

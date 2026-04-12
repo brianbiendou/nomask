@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import CookieConsent from "@/components/shared/CookieConsent";
 import { JsonLdWebSite } from "@/components/shared/JsonLd";
 import { SITE_NAME, SITE_URL } from "@/lib/utils";
 import { Analytics } from "@vercel/analytics/react";
@@ -108,6 +109,21 @@ export default async function LocaleLayout({ children, params }: LayoutProps) {
         <link rel="alternate" hrefLang="fr" href={`${SITE_URL}/fr`} />
         <link rel="alternate" hrefLang="en" href={`${SITE_URL}/en`} />
         <link rel="alternate" hrefLang="x-default" href={`${SITE_URL}/fr`} />
+        {/* Google Consent Mode v2 — doit être AVANT AdSense */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('consent', 'default', {
+  'ad_storage': 'denied',
+  'analytics_storage': 'denied',
+  'ad_personalization': 'denied',
+  'ad_user_data': 'denied',
+  'wait_for_update': 500
+});`,
+          }}
+        />
         {/* Google AdSense */}
         <meta name="google-adsense-account" content="ca-pub-3632266086082682" />
         <script
@@ -115,28 +131,11 @@ export default async function LocaleLayout({ children, params }: LayoutProps) {
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3632266086082682"
           crossOrigin="anonymous"
         />
-        {/* Google Reader Revenue Manager */}
-        <script
-          async
-          type="application/javascript"
-          src="https://news.google.com/swg/js/v1/swg-basic.js"
-        />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(self.SWG_BASIC = self.SWG_BASIC || []).push(function(basicSubscriptions) {
-  basicSubscriptions.init({
-    type: "NewsArticle",
-    isPartOfType: ["Product"],
-    isPartOfProductId: "CAow2d7fCw:openaccess",
-    clientOptions: { theme: "light", lang: "${locale}" }
-  });
-});`,
-          }}
-        />
       </head>
       <Header locale={locale as Locale} dict={dict} />
       <main className="flex-1">{children}</main>
       <Footer locale={locale as Locale} dict={dict} />
+      <CookieConsent locale={locale} />
       <Analytics />
     </>
   );

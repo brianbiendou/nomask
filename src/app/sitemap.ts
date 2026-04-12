@@ -26,7 +26,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Pages statiques
   const staticPages: MetadataRoute.Sitemap = [
     ...localeEntries("", { changeFrequency: "hourly", priority: 1 }),
-    ...localeEntries("/a-propos", { changeFrequency: "monthly", priority: 0.3 }),
+    ...localeEntries("/a-propos", { changeFrequency: "monthly", priority: 0.4 }),
+    ...localeEntries("/charte-editoriale", { changeFrequency: "monthly", priority: 0.4 }),
     ...localeEntries("/auteurs", { changeFrequency: "weekly", priority: 0.5 }),
     ...localeEntries("/contact", { changeFrequency: "monthly", priority: 0.3 }),
     ...localeEntries("/recherche", { changeFrequency: "monthly", priority: 0.2 }),

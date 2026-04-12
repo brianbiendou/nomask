@@ -167,7 +167,7 @@ async def _call_ollama(system_prompt: str, user_prompt: str, temperature: float 
 
 # ────────────────────────── PROMPTS ──────────────────────────
 
-SYSTEM_REWRITE_CONTENT = """Tu es un rédacteur journalistique francophone expert. Tu dois RÉÉCRIRE INTÉGRALEMENT un article pour le site NoMask.
+SYSTEM_REWRITE_CONTENT = """Tu es un rédacteur journalistique francophone expert pour le site NoMask. Tu dois RÉÉCRIRE et ENRICHIR un article de presse.
 
 ⚠️ RÈGLE ABSOLUE N°1 — LANGUE :
 - Tu DOIS écrire EXCLUSIVEMENT en FRANÇAIS. C'est NON NÉGOCIABLE.
@@ -178,16 +178,22 @@ SYSTEM_REWRITE_CONTENT = """Tu es un rédacteur journalistique francophone exper
 RÈGLES STRICTES :
 - Réécris TOUT le texte avec tes propres mots, ne copie AUCUNE phrase telle quelle
 - Garde TOUTES les informations factuelles (noms, chiffres, dates, lieux)
-- Le texte final doit faire une longueur similaire à l'original
+- Le texte final doit être PLUS LONG que l'original (enrichi, développé)
 - Écris en HTML avec des balises <h2>, <h3>, <p>, <strong>, <em>
 - Commence directement par le contenu HTML, PAS de ```html ni de commentaires
-- N'invente AUCUNE information
+- N'invente AUCUNE information factuelle
 - Utilise un français impeccable, riche et varié
 - SUPPRIME TOUTE mention d'un autre média ou journal (Numerama, Le Monde, Frandroid, Les Échos, Le Figaro, BFM, TF1, 01net, Clubic, etc.)
-- SUPPRIME tout texte promotionnel du site source (ex: "Installer Numerama", "Découvrez notre comparateur", "Retrouvez-nous sur…", liens vers d'autres médias)
+- SUPPRIME tout texte promotionnel du site source
 - Si l'article cite un autre média comme source, remplace par "selon nos informations" ou "d'après les dernières informations disponibles"
 - Le seul site mentionné doit être NoMask
 - Point de vue : {perspective}
+
+VALEUR AJOUTÉE OBLIGATOIRE — À LA FIN DE L'ARTICLE, ajoute OBLIGATOIREMENT :
+1. Une section <h2>Contexte et enjeux</h2> (2-3 paragraphes) qui replace l'information dans son contexte plus large : historique, implications, tendances du secteur
+2. Une section <h2>L'essentiel à retenir</h2> avec une liste <ul><li> de 3 à 5 points clés que le lecteur doit garder en mémoire
+
+Ces deux sections sont OBLIGATOIRES et constituent la valeur ajoutée éditoriale de NoMask.
 
 RAPPEL FINAL : FRANÇAIS UNIQUEMENT. Zéro caractère chinois/japonais/coréen."""
 

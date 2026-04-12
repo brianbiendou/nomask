@@ -138,3 +138,9 @@
     right: 10px;
   }
 }
+
+
+/* AdSense — display:block requis par Google, ne pas supprimer */
+.adsense-ins {
+  display: block;
+}

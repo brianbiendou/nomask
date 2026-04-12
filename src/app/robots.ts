@@ -8,7 +8,12 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/api/", "/brian/"],
+        disallow: [
+          "/api/",       // endpoints internes
+          "/brian/",     // interface admin
+          // Paramètres de recherche dynamiques — évite l'indexation de pages thin
+          "/*/recherche?",
+        ],
       },
     ],
     sitemap: `${SITE_URL}/sitemap.xml`,

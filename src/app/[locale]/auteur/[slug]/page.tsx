@@ -17,7 +17,16 @@ interface PageProps {
 
 export async function generateStaticParams() {
   const authors = await getAllAuthors();
-  return authors.map((a) => ({ slug: a.slug }));
+  // Ne génère des pages que pour les auteurs ayant au moins un article publié
+  const withArticles = await Promise.all(
+    authors.map(async (a) => {
+      const articles = await getArticlesByAuthor(a.id, "fr");
+      return articles.length > 0 ? a : null;
+    })
+  );
+  return withArticles
+    .filter((a): a is NonNullable<typeof a> => a !== null)
+    .map((a) => ({ slug: a.slug }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -146,7 +155,13 @@ export default async function AuthorPage({ params }: PageProps) {
                 ))}
               </div>
             ) : (
-              <p className="text-gray-500 font-sans">{dict.author.noArticles}</p>
+              <div>
+                <p className="text-gray-500 font-sans">
+                  {locale === "en"
+                    ? `${author.name} has not published any articles yet in this language.`
+                    : `${author.name} n'a pas encore publié d'articles dans cette langue.`}
+                </p>
+              </div>
             )}
           </div>
 

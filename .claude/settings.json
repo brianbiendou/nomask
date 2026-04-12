@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls d:/MesApps/deploy/nomask/src/app/[locale]/)",
+      "Bash(npx tsc:*)",
+      "Bash(curl -s -X GET 'https://rmhjnljlatmtlwilrvuz.supabase.co/rest/v1/authors?select=id,name,slug,role,bio,avatar_url&order=name' -H 'apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtaGpubGpsYXRtdGx3aWxydnV6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDcxODkyMCwiZXhwIjoyMDkwMjk0OTIwfQ.uqM5MUdBFxIlSSDIVl_D46bWK6P-zpV3UafZWaQCjt4' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtaGpubGpsYXRtdGx3aWxydnV6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDcxODkyMCwiZXhwIjoyMDkwMjk0OTIwfQ.uqM5MUdBFxIlSSDIVl_D46bWK6P-zpV3UafZWaQCjt4')",
+      "Bash(python -m json.tool)",
+      "Bash(python -c ':*)",
+      "Bash(curl -s http://localhost:8000/health)",
+      "Bash(pip3 list:*)",
+      "Bash(python3 -c \"import sys; sys.stdout.reconfigure\\(encoding='utf-8'\\)\")",
+      "Bash(PYTHONIOENCODING=utf-8 python3 scripts/fix_adsense_content.py)",
+      "WebFetch(domain:support.google.com)"
+    ],
+    "additionalDirectories": [
+      "d:\\MesApps\\deploy\\nomask\\src\\app\\[locale]"
+    ]
+  }
+}

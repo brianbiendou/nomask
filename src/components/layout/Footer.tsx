@@ -20,6 +20,7 @@ export default function Footer({ locale, dict }: FooterProps) {
   const footerLinks = [
     { name: dict.footer.home, href: `/${locale}` },
     { name: dict.footer.authors, href: `/${locale}/auteurs` },
+    { name: locale === "fr" ? "Charte éditoriale" : "Editorial Charter", href: `/${locale}/charte-editoriale` },
     { name: dict.footer.legal, href: `/${locale}/mentions-legales` },
     { name: dict.footer.privacy, href: `/${locale}/donnees-personnelles` },
     { name: dict.footer.cookies, href: `/${locale}/politique-cookies` },
