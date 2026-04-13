@@ -32,3 +32,6 @@ __pycache__/
 *.pyc
 *.pyo
 backend/__pycache__/
+
+# claude
+.claude/
